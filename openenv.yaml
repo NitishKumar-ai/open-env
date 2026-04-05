@@ -1,0 +1,77 @@
+name: code-review-env
+version: 1.0.0
+description: >
+  RL environment for training AI agents to detect bugs and security
+  vulnerabilities in real Python code. Covers off-by-one errors,
+  authentication logic flaws, and SQL injection — with deterministic
+  programmatic graders and partial-progress reward signals.
+
+author: Inmodel Labs
+tags:
+  - code-review
+  - security
+  - software-engineering
+  - real-world
+  - python
+
+tasks:
+  - id: task_easy_001
+    difficulty: easy
+    description: "Detect off-by-one error in array traversal loop"
+    reset_params:
+      difficulty: easy
+
+  - id: task_medium_001
+    difficulty: medium
+    description: "Detect authentication logic flaw enabling privilege escalation"
+    reset_params:
+      difficulty: medium
+
+  - id: task_hard_001
+    difficulty: hard
+    description: "Detect SQL injection via unsanitised f-string database query"
+    reset_params:
+      difficulty: hard
+
+action_space:
+  type: object
+  properties:
+    bug_identified:   { type: boolean }
+    bug_location:     { type: string }
+    bug_type:         { type: string }
+    bug_description:  { type: string }
+    severity:         { type: string, enum: [none, low, medium, high, critical] }
+    suggested_fix:    { type: string }
+  required:
+    - bug_identified
+    - bug_location
+    - bug_type
+    - bug_description
+    - severity
+    - suggested_fix
+
+observation_space:
+  type: object
+  properties:
+    code_snippet:       { type: string }
+    language:           { type: string }
+    task_description:   { type: string }
+    task_id:            { type: string }
+    difficulty:         { type: string, enum: [easy, medium, hard] }
+    step_number:        { type: integer }
+    max_steps:          { type: integer }
+    previous_feedback:  { type: string, nullable: true }
+
+reward:
+  min: 0.0
+  max: 1.0
+  description: >
+    Partial rewards for: bug identification (0.20), correct bug type (0.20),
+    precise location (0.10), description quality (0.25, keyword density),
+    fix quality (0.15, keyword density), correct severity (0.10).
+
+endpoints:
+  health: GET  /health
+  reset:  POST /reset
+  step:   POST /step
+  state:  GET  /state
