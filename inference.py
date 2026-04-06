@@ -49,7 +49,9 @@ Schema:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def env_post(path: str, data: dict | None = None, params: dict | None = None) -> dict:
+from typing import Optional
+
+def env_post(path: str, data: Optional[dict] = None, params: Optional[dict] = None) -> dict:
     url = f"{ENV_BASE_URL}{path}"
     resp = requests.post(url, json=data or {}, params=params or {}, timeout=30)
     resp.raise_for_status()
