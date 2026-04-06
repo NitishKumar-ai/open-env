@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Security Review Environment</title>
+    <meta name="description" content="RL Environment for training AI agents to detect bugs and security vulnerabilities.">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Include Highlight.js for code formatting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/tokyo-night-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+</head>
+<body>
+    <div id="app-background"></div>
+    <div id="particle-overlay"></div>
+
+    <main class="container">
+        <header class="glass-panel">
+            <h1>Code Security RL Environment</h1>
+            <p>Interactive baseline evaluation for AI Agents.</p>
+        </header>
+
+        <div class="dashboard">
+            <!-- Left Column: Environment Observation -->
+            <section class="glass-panel observation-panel" id="observation-section">
+                <div class="panel-header">
+                    <h2><span class="icon">👁️</span> Environment State</h2>
+                    <div class="badge-row">
+                        <span id="badge-difficulty" class="badge">Loading...</span>
+                        <span id="badge-step" class="badge">Step 0/0</span>
+                    </div>
+                </div>
+
+                <div class="task-info">
+                    <strong>Task:</strong> <span id="task-description">Initializing environment...</span>
+                </div>
+
+                <div id="feedback-container" class="feedback-info hidden">
+                    <strong>Previous Feedback:</strong> <span id="previous-feedback"></span>
+                </div>
+
+                <div class="code-container">
+                    <div class="code-header">
+                        <span id="lang-badge">Language: Unknown</span>
+                    </div>
+                    <pre><code id="code-snippet" class="language-python"># Awaiting initialization...</code></pre>
+                </div>
+            </section>
+
+            <!-- Right Column: Agent Action Form -->
+            <section class="glass-panel action-panel" id="action-section">
+                <div class="panel-header">
+                    <h2><span class="icon">🛠️</span> Agent Action</h2>
+                </div>
+
+                <form id="action-form">
+                    <div class="form-group toggle-group">
+                        <label for="input-bug-identified">Bug Identified</label>
+                        <select id="input-bug-identified" required>
+                            <option value="true" selected>Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-bug-type">Bug Type</label>
+                        <select id="input-bug-type" required>
+                            <option value="off-by-one">Off-by-one</option>
+                            <option value="logic-error">Logic Error</option>
+                            <option value="security-vulnerability">Security Vulnerability</option>
+                            <option value="null-dereference">Null Dereference</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-severity">Severity</label>
+                        <select id="input-severity" required>
+                            <option value="none">None</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-bug-location">Bug Location</label>
+                        <input type="text" id="input-bug-location" placeholder="e.g., fetch_records() line 4" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-bug-description">Description</label>
+                        <textarea id="input-bug-description" rows="3" placeholder="Explain the vulnerability..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-suggested-fix">Suggested Fix</label>
+                        <textarea id="input-suggested-fix" rows="3" placeholder="Provide corrected code or explanation..." required></textarea>
+                    </div>
+
+                    <button type="submit" id="btn-submit-action" class="primary-btn">Submit Action</button>
+                    <button type="button" id="btn-reset-env" class="secondary-btn">Reset Environment</button>
+                </form>
+            </section>
+        </div>
+
+        <!-- Sticky Status Toast -->
+        <div id="reward-toast" class="toast hidden">
+            <div class="toast-content">
+                <span class="toast-icon">✨</span>
+                <div class="toast-text">
+                    <h3 id="toast-title">Reward Received</h3>
+                    <p id="toast-message">Score: 0.0</p>
+                </div>
+            </div>
+            <button id="toast-close">&times;</button>
+        </div>
+    </main>
+
+    <script src="/static/main.js"></script>
+</body>
+</html>
