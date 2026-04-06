@@ -15,6 +15,11 @@ import os
 import json
 import time
 import re
+from dotenv import load_dotenv
+
+# Load .env variables before anything else
+load_dotenv()
+
 import requests
 from openai import OpenAI
 
