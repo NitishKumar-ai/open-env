@@ -1,15 +1,14 @@
 from typing import Dict, Any, Tuple, Optional
-from .models import CodeReviewAction, CodeReviewObservation, CodeReviewState
+from .server.models import CodeReviewAction, CodeReviewObservation, CodeReviewState
 
 MAX_STEPS = 3
 
-# ──────────────────────────────────────────────
 # TASK DEFINITIONS
-# ──────────────────────────────────────────────
+
 
 TASKS: Dict[str, dict] = {
 
-    # ── EASY ─────────────────────────────────
+    # EASY 
     "easy": {
         "id": "task_easy_001",
         "difficulty": "easy",
@@ -50,7 +49,7 @@ TASKS: Dict[str, dict] = {
         },
     },
 
-    # ── MEDIUM ────────────────────────────────
+    #MEDIUM 
     "medium": {
         "id": "task_medium_001",
         "difficulty": "medium",
@@ -148,9 +147,9 @@ TASKS: Dict[str, dict] = {
 }
 
 
-# ──────────────────────────────────────────────
+
 # GRADER
-# ──────────────────────────────────────────────
+
 
 def grade_action(action: CodeReviewAction, task: dict) -> Tuple[float, Dict]:
     """
@@ -239,10 +238,8 @@ def grade_action(action: CodeReviewAction, task: dict) -> Tuple[float, Dict]:
 
     return total, {"breakdown": breakdown, "total_score": total, "feedback": feedback}
 
-
-# ──────────────────────────────────────────────
 # ENVIRONMENT
-# ──────────────────────────────────────────────
+
 
 class CodeReviewEnvironment:
     def __init__(self):
@@ -293,7 +290,7 @@ class CodeReviewEnvironment:
             )
         return self._state
 
-    # ── helpers ───────────────────────────────
+    # helpers
 
     def _build_obs(self, step_number: int, previous_feedback: Optional[str]) -> CodeReviewObservation:
         t = self._current_task

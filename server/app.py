@@ -3,7 +3,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from .models import CodeReviewAction, CodeReviewState, StepResponse, ResetResponse
+from .server.models import CodeReviewAction, CodeReviewState, StepResponse, ResetResponse
 from .environment import CodeReviewEnvironment
 
 app = FastAPI(
