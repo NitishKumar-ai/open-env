@@ -28,10 +28,39 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Tab elements
         tabs: document.querySelectorAll('.mac-tab'),
-        panes: document.querySelectorAll('.tab-pane')
+        panes: document.querySelectorAll('.tab-pane'),
+        
+        // Theme elements
+        themeToggle: document.getElementById('theme-toggle'),
+        html: document.documentElement,
+        sunIcon: document.getElementById('sun-icon'),
+        moonIcon: document.getElementById('moon-icon')
     };
 
     let isDone = false;
+
+    // Theme Logic
+    function setTheme(theme) {
+        elements.html.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        
+        if (theme === 'dark') {
+            elements.sunIcon.classList.add('hidden');
+            elements.moonIcon.classList.remove('hidden');
+        } else {
+            elements.sunIcon.classList.remove('hidden');
+            elements.moonIcon.classList.add('hidden');
+        }
+    }
+
+    // Initialize theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+
+    elements.themeToggle.addEventListener('click', () => {
+        const currentTheme = elements.html.getAttribute('data-theme');
+        setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
 
     // Tab Switching Logic
     elements.tabs.forEach(tab => {
