@@ -2,6 +2,8 @@ import os
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from .models import CodeReviewAction, CodeReviewState, StepResponse, ResetResponse
 from .environment import CodeReviewEnvironment
@@ -22,7 +24,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 env = CodeReviewEnvironment()
+
+@app.get("/")
+def read_index():
+    return FileResponse("static/index.html")
 
 
 @app.get("/health")
