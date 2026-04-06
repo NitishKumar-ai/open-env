@@ -1,14 +1,18 @@
 :root {
-    --bg-primary: #0a0a0f;
-    --bg-card: rgba(20, 20, 30, 0.6);
-    --bg-glass: rgba(255, 255, 255, 0.03);
-    --border-glass: rgba(255, 255, 255, 0.08);
-    --accent-primary: #7c3aed;
-    --accent-glow: rgba(124, 58, 237, 0.5);
-    --accent-secondary: #0ea5e9;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --success: #10b981;
+    --bg-primary: #000000;
+    --bg-card: #151515;
+    --bg-input: #1f1f1f;
+    --border-card: #2e2e2e;
+    --border-input: #3e3e3e;
+    
+    /* NVIDIA Green */
+    --accent-primary: #76b900;
+    --accent-hover: #88d400;
+    --accent-glow: rgba(118, 185, 0, 0.2);
+    
+    --text-main: #ffffff;
+    --text-muted: #a1a1aa;
+    --success: #76b900;
     --error: #ef4444;
 }
 
@@ -19,7 +23,7 @@
 }
 
 body {
-    font-family: 'Outfit', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     color: var(--text-main);
     background-color: var(--bg-primary);
     min-height: 100vh;
@@ -28,22 +32,15 @@ body {
     overflow-x: hidden;
 }
 
-/* Background Gradients & Animation */
+/* Background Subtle Glow */
 #app-background {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle at 15% 50%, rgba(124, 58, 237, 0.15), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.15), transparent 25%);
+    background: radial-gradient(circle at 50% 0%, rgba(118, 185, 0, 0.1), transparent 50%);
     z-index: -2;
-    animation: pulseBg 10s ease-in-out infinite alternate;
-}
-
-@keyframes pulseBg {
-    0% { transform: scale(1); }
-    100% { transform: scale(1.1); }
 }
 
 .container {
@@ -52,32 +49,42 @@ body {
 }
 
 header {
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
     text-align: center;
-    padding: 2rem;
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--border-card);
 }
 
 h1 {
-    font-size: 2.5rem;
-    background: linear-gradient(to right, #a855f7, #38bdf8);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-main);
     margin-bottom: 0.5rem;
+}
+
+/* Add a subtle green underline to h1 */
+h1::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 4px;
+    background: var(--accent-primary);
+    margin: 1rem auto 0;
+    border-radius: 2px;
 }
 
 p {
     color: var(--text-muted);
+    font-size: 1.1rem;
 }
 
-.glass-panel {
-    background: var(--bg-glass);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--border-glass);
-    border-radius: 16px;
-    padding: 1.5rem;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+.panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 8px;
+    padding: 1.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
 }
 
 .dashboard {
@@ -98,9 +105,9 @@ p {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border-glass);
+    border-bottom: 1px solid var(--border-card);
     padding-bottom: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
 }
 
 h2 {
@@ -109,6 +116,11 @@ h2 {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    color: var(--text-main);
+}
+
+.icon {
+    color: var(--accent-primary);
 }
 
 .badge-row {
@@ -117,26 +129,30 @@ h2 {
 }
 
 .badge {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
     padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
+    border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
+    color: var(--accent-primary);
 }
 
 /* Observation Panel */
 .task-info {
-    margin-bottom: 1rem;
-    font-size: 1rem;
-    line-height: 1.5;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #e4e4e7;
 }
 
 .feedback-info {
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.2);
-    border-radius: 8px;
+    border-left: 3px solid var(--error);
+    border-radius: 4px;
     padding: 1rem;
     margin-bottom: 1rem;
     font-size: 0.9rem;
@@ -147,18 +163,18 @@ h2 {
 }
 
 .code-container {
-    background: #1a1b26;
-    border-radius: 8px;
+    background: #09090b;
+    border-radius: 6px;
     overflow: hidden;
-    border: 1px solid var(--border-glass);
+    border: 1px solid var(--border-card);
 }
 
 .code-header {
-    background: #16161e;
+    background: #18181b;
     padding: 0.5rem 1rem;
     font-size: 0.75rem;
     color: var(--text-muted);
-    border-bottom: 1px solid #292e42;
+    border-bottom: 1px solid var(--border-card);
     display: flex;
     justify-content: flex-end;
 }
@@ -166,8 +182,8 @@ h2 {
 pre {
     margin: 0;
     padding: 1rem;
-    font-family: 'Roboto Mono', monospace;
-    font-size: 0.9rem;
+    font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+    font-size: 0.85rem;
     overflow-x: auto;
 }
 
@@ -179,27 +195,27 @@ pre {
 label {
     display: block;
     font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--text-muted);
-    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #d4d4d8;
+    margin-bottom: 0.4rem;
 }
 
 input, select, textarea {
     width: 100%;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border-glass);
-    border-radius: 8px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
+    border-radius: 4px;
     color: var(--text-main);
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 0.875rem;
     font-family: inherit;
     font-size: 0.95rem;
-    transition: all 0.2s;
+    transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px var(--accent-glow);
+    box-shadow: 0 0 0 1px var(--accent-primary);
 }
 
 select option {
@@ -209,36 +225,37 @@ select option {
 
 button {
     width: 100%;
-    padding: 0.875rem;
+    padding: 0.75rem;
     border: none;
-    border-radius: 8px;
+    border-radius: 4px;
     font-family: inherit;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.95rem;
     cursor: pointer;
     transition: all 0.2s;
     margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
 }
 
 .primary-btn {
-    background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
-    color: white;
-    box-shadow: 0 4px 15px var(--accent-glow);
+    background: var(--accent-primary);
+    color: #000000;
 }
 
 .primary-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px var(--accent-glow);
+    background: var(--accent-hover);
 }
 
 .secondary-btn {
     background: transparent;
-    border: 1px solid var(--border-glass);
+    border: 1px solid var(--border-input);
     color: var(--text-main);
 }
 
 .secondary-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-input);
+    border-color: #52525b;
 }
 
 /* Toast */
@@ -246,19 +263,20 @@ button {
     position: fixed;
     bottom: 2rem;
     right: 2rem;
-    background: rgba(20, 20, 30, 0.9);
-    border: 1px solid var(--border-glass);
-    padding: 1rem;
-    border-radius: 8px;
+    background: #18181b;
+    border: 1px solid var(--accent-primary);
+    border-left: 4px solid var(--accent-primary);
+    padding: 1rem 1.25rem;
+    border-radius: 4px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5), 0 0 15px var(--accent-glow);
     transform: translateY(100px);
     opacity: 0;
-    animation: slideUp 0.4s forwards;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     z-index: 100;
-    min-width: 300px;
+    min-width: 320px;
 }
 
 @keyframes slideUp {
@@ -275,18 +293,19 @@ button {
 }
 
 .toast-icon {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
 }
 
 #toast-title {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     margin-bottom: 0.2rem;
+    color: var(--text-muted);
 }
 
 #toast-message {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--success);
+    color: var(--text-main);
 }
 
 #toast-close {
@@ -300,7 +319,11 @@ button {
     margin: 0;
 }
 
+#toast-close:hover {
+    color: var(--text-main);
+}
+
 .environment-done {
     border-color: var(--success);
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 15px var(--accent-glow);
 }
