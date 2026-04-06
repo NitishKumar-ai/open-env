@@ -1,5 +1,5 @@
 from typing import Dict, Any, Tuple, Optional
-from .server.models import CodeReviewAction, CodeReviewObservation, CodeReviewState
+from .models import CodeReviewAction, CodeReviewObservation, CodeReviewState
 
 MAX_STEPS = 3
 
