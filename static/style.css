@@ -61,6 +61,98 @@ h1 {
     letter-spacing: -0.02em;
     color: var(--text-main);
     margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+/* Mac Window Styling */
+.mac-window {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    margin-top: 1rem;
+}
+
+.mac-title-bar {
+    background: #1a1a1a;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border-card);
+    position: relative;
+}
+
+.mac-dots {
+    display: flex;
+    gap: 8px;
+    position: absolute;
+    left: 16px;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.dot.red { background: #ff5f57; }
+.dot.yellow { background: #febc2e; }
+.dot.green { background: #28c840; }
+
+.mac-tabs {
+    display: flex;
+    margin: 0 auto;
+    background: #000;
+    border-radius: 6px;
+    padding: 2px;
+}
+
+.mac-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    width: auto;
+    margin-bottom: 0;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.mac-tab:hover {
+    color: var(--text-main);
+}
+
+.mac-tab.active {
+    background: var(--bg-input);
+    color: var(--accent-primary);
+}
+
+.window-content {
+    padding: 2rem;
+    min-height: 500px;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
 }
 
 /* Add a subtle green underline to h1 */
@@ -80,11 +172,11 @@ p {
 }
 
 .panel {
-    background: var(--bg-card);
+    background: #1a1a1b;
     border: 1px solid var(--border-card);
     border-radius: 8px;
     padding: 1.75rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
 }
 
 .dashboard {

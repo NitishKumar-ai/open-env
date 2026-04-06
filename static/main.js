@@ -24,10 +24,34 @@ document.addEventListener('DOMContentLoaded', () => {
         inputSeverity: document.getElementById('input-severity'),
         inputBugLocation: document.getElementById('input-bug-location'),
         inputBugDescription: document.getElementById('input-bug-description'),
-        inputSuggestedFix: document.getElementById('input-suggested-fix')
+        inputSuggestedFix: document.getElementById('input-suggested-fix'),
+        
+        // Tab elements
+        tabs: document.querySelectorAll('.mac-tab'),
+        panes: document.querySelectorAll('.tab-pane')
     };
 
     let isDone = false;
+
+    // Tab Switching Logic
+    elements.tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const target = tab.getAttribute('data-tab');
+            
+            // Update tabs
+            elements.tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            // Update panes
+            elements.panes.forEach(pane => {
+                if (pane.id === `tab-${target}`) {
+                    pane.classList.add('active');
+                } else {
+                    pane.classList.remove('active');
+                }
+            });
+        });
+    });
 
     // Initialize Environment
     async function resetEnvironment(difficulty = 'easy') {
