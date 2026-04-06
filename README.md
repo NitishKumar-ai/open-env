@@ -1,3 +1,11 @@
+---
+title: Code Review Env
+emoji: 🏃
+colorFrom: red
+colorTo: purple
+sdk: docker
+pinned: false
+---
 # Code Security Review — OpenEnv
 
 > An RL environment for training AI agents to detect bugs and security
