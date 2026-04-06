@@ -21,89 +21,129 @@
             <p>Interactive baseline evaluation for AI Agents.</p>
         </header>
 
-        <div class="dashboard">
-            <!-- Left Column: Environment Observation -->
-            <section class="panel observation-panel" id="observation-section">
-                <div class="panel-header">
-                    <h2>Environment State</h2>
-                    <div class="badge-row">
-                        <span id="badge-difficulty" class="badge">Loading...</span>
-                        <span id="badge-step" class="badge">Step 0/0</span>
+        <div class="mac-window">
+            <div class="mac-title-bar">
+                <div class="mac-dots">
+                    <span class="dot red"></span>
+                    <span class="dot yellow"></span>
+                    <span class="dot green"></span>
+                </div>
+                <div class="mac-tabs">
+                    <button class="mac-tab active" data-tab="playground">Playground</button>
+                    <button class="mac-tab" data-tab="details">Model Details</button>
+                    <button class="mac-tab" data-tab="specs">API Specs</button>
+                </div>
+            </div>
+
+            <div class="window-content">
+                <div id="tab-playground" class="tab-pane active">
+                    <div class="dashboard">
+                        <!-- Left Column: Environment Observation -->
+                        <section class="panel observation-panel" id="observation-section">
+                            <div class="panel-header">
+                                <h2>Environment State</h2>
+                                <div class="badge-row">
+                                    <span id="badge-difficulty" class="badge">Loading...</span>
+                                    <span id="badge-step" class="badge">Step 0/0</span>
+                                </div>
+                            </div>
+
+                            <div class="task-info">
+                                <strong>Task:</strong> <span id="task-description">Initializing environment...</span>
+                            </div>
+
+                            <div id="feedback-container" class="feedback-info hidden">
+                                <strong>Previous Feedback:</strong> <span id="previous-feedback"></span>
+                            </div>
+
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <span id="lang-badge">Language: Unknown</span>
+                                </div>
+                                <pre><code id="code-snippet" class="language-python"># Awaiting initialization...</code></pre>
+                            </div>
+                        </section>
+
+                        <!-- Right Column: Agent Action Form -->
+                        <section class="panel action-panel" id="action-section">
+                            <div class="panel-header">
+                                <h2>Agent Action</h2>
+                            </div>
+
+                            <form id="action-form">
+                                <div class="form-group toggle-group">
+                                    <label for="input-bug-identified">Bug Identified</label>
+                                    <select id="input-bug-identified" required>
+                                        <option value="true" selected>Yes</option>
+                                        <option value="false">No</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="input-bug-type">Bug Type</label>
+                                    <select id="input-bug-type" required>
+                                        <option value="off-by-one">Off-by-one</option>
+                                        <option value="logic-error">Logic Error</option>
+                                        <option value="security-vulnerability">Security Vulnerability</option>
+                                        <option value="null-dereference">Null Dereference</option>
+                                        <option value="none">None</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="input-severity">Severity</label>
+                                    <select id="input-severity" required>
+                                        <option value="none">None</option>
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="critical">Critical</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="input-bug-location">Bug Location</label>
+                                    <input type="text" id="input-bug-location" placeholder="e.g., fetch_records() line 4" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="input-bug-description">Description</label>
+                                    <textarea id="input-bug-description" rows="3" placeholder="Explain the vulnerability..." required></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="input-suggested-fix">Suggested Fix</label>
+                                    <textarea id="input-suggested-fix" rows="3" placeholder="Provide corrected code or explanation..." required></textarea>
+                                </div>
+
+                                <button type="submit" id="btn-submit-action" class="primary-btn">Submit Action</button>
+                                <button type="button" id="btn-reset-env" class="secondary-btn">Reset Environment</button>
+                            </form>
+                        </section>
                     </div>
                 </div>
 
-                <div class="task-info">
-                    <strong>Task:</strong> <span id="task-description">Initializing environment...</span>
+                <div id="tab-details" class="tab-pane">
+                    <div class="panel">
+                        <h2>Model Details</h2>
+                        <p style="margin-top: 1rem;">OpenEnv is an RL environment designed for security validation. This baseline uses standard reward signals to calibrate agents.</p>
+                        <ul style="margin-top: 1rem; color: var(--text-muted); list-style-position: inside;">
+                            <li>Deterministic Reward Signals</li>
+                            <li>Multi-step Episode Support</li>
+                            <li>Security-focused Task Sets</li>
+                        </ul>
+                    </div>
                 </div>
 
-                <div id="feedback-container" class="feedback-info hidden">
-                    <strong>Previous Feedback:</strong> <span id="previous-feedback"></span>
+                <div id="tab-specs" class="tab-pane">
+                    <div class="panel">
+                        <h2>API Specifications</h2>
+                        <pre style="margin-top: 1rem; background: #000; padding: 1rem; border-radius: 4px;">POST /reset?difficulty={easy|medium|hard}
+POST /step {bug_identified, bug_type, ...}
+GET /state</pre>
+                    </div>
                 </div>
-
-                <div class="code-container">
-                    <div class="code-header">
-                        <span id="lang-badge">Language: Unknown</span>
-                    </div>
-                    <pre><code id="code-snippet" class="language-python"># Awaiting initialization...</code></pre>
-                </div>
-            </section>
-
-            <!-- Right Column: Agent Action Form -->
-            <section class="panel action-panel" id="action-section">
-                <div class="panel-header">
-                    <h2>Agent Action</h2>
-                </div>
-
-                <form id="action-form">
-                    <div class="form-group toggle-group">
-                        <label for="input-bug-identified">Bug Identified</label>
-                        <select id="input-bug-identified" required>
-                            <option value="true" selected>Yes</option>
-                            <option value="false">No</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="input-bug-type">Bug Type</label>
-                        <select id="input-bug-type" required>
-                            <option value="off-by-one">Off-by-one</option>
-                            <option value="logic-error">Logic Error</option>
-                            <option value="security-vulnerability">Security Vulnerability</option>
-                            <option value="null-dereference">Null Dereference</option>
-                            <option value="none">None</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="input-severity">Severity</label>
-                        <select id="input-severity" required>
-                            <option value="none">None</option>
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                            <option value="critical">Critical</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="input-bug-location">Bug Location</label>
-                        <input type="text" id="input-bug-location" placeholder="e.g., fetch_records() line 4" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="input-bug-description">Description</label>
-                        <textarea id="input-bug-description" rows="3" placeholder="Explain the vulnerability..." required></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="input-suggested-fix">Suggested Fix</label>
-                        <textarea id="input-suggested-fix" rows="3" placeholder="Provide corrected code or explanation..." required></textarea>
-                    </div>
-
-                    <button type="submit" id="btn-submit-action" class="primary-btn">Submit Action</button>
-                    <button type="button" id="btn-reset-env" class="secondary-btn">Reset Environment</button>
-                </form>
-            </section>
+            </div>
         </div>
 
         <!-- Sticky Status Toast -->
