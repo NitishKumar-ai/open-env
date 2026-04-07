@@ -512,15 +512,15 @@ When all items above are checked, fill in this block and attach it to your submi
 
 ```
 Environment Name:  Code Security Review
-HF Space URL:      https://huggingface.co/spaces/huggingface/openenv-code-security-review
+HF Space URL:      https://huggingface.co/spaces/inmodel/code-review-env
 Baseline Scores:
   - Easy task:     0.68  (task name: python-off-by-one)
-  - Medium task:   0.70  (task name: js-auth-privilege)
-  - Hard task:     0.54  (task name: python-sql-injection)
-Inference runtime: 2 minutes
+  - Medium task:   0.10  (task name: js-auth-privilege)
+  - Hard task:     0.75  (task name: python-sql-injection)
+Inference runtime: < 1 minute
 Docker image size: 250 MB
 Submitted by:      NitishKumar
-Date:              2026-04-07
+Date:              2026-04-08
 
 I confirm all 18 disqualifying items are checked [yes/no]: yes
 I confirm the full validator suite passes [yes/no]:         yes
