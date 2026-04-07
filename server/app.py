@@ -1,7 +1,13 @@
+"""Main FastAPI application for Code Security Review.
+
+Exposes RESTful endpoints conforming to standard OpenEnv compliance specifications 
+dictating interactions for agent evaluation.
+"""
+
 import os
 import uvicorn
 from typing import List, Optional
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from server.models import CodeReviewAction, StepResult, ResetResponse, StateResponse, TaskInfo
@@ -25,7 +31,7 @@ env = CodeSecurityEnv()
 
 
 @app.get("/")
-def health():
+def health() -> dict:
     """Health check endpoint."""
     return {
         "status": "ok",
@@ -36,7 +42,7 @@ def health():
 
 
 @app.get("/tasks", response_model=List[TaskInfo])
-def list_tasks():
+def list_tasks() -> List[TaskInfo]:
     """List all available tasks."""
     return [
         TaskInfo(
@@ -53,30 +59,56 @@ def list_tasks():
 def reset(
     task_id: str = Query(default="python-off-by-one", description="Task ID to reset to"),
     seed: Optional[int] = Query(default=None, description="Optional seed for reproducibility")
-):
+) -> ResetResponse:
     """Reset the environment and return the first observation."""
     if task_id not in TASKS:
-        raise HTTPException(status_code=404, detail=f"Task '{task_id}' not found.")
-    obs = env.reset(task_id=task_id, seed=seed)
-    return ResetResponse(observation=obs)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Task '{task_id}' not found."
+        )
+    
+    try:
+        obs = env.reset(task_id=task_id, seed=seed)
+        return ResetResponse(observation=obs)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"System breakdown during environment reset: {e}"
+        )
 
 
 @app.post("/step", response_model=StepResult)
-def step(action: CodeReviewAction):
+def step(action: CodeReviewAction) -> StepResult:
     """Submit a code review action and receive a reward signal."""
-    result = env.step(action)
-    return result
+    try:
+        return env.step(action)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error executing agent action logic: {e}"
+        )
 
 
 @app.get("/state", response_model=StateResponse)
-def state():
+def state() -> StateResponse:
     """Return the current environment state."""
-    return env.state()
+    try:
+        return env.state()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error analyzing global runtime state tracking: {e}"
+        )
 
 
-def main():
-    """Run the environment server."""
-    port = int(os.environ.get("PORT", 8000))
+def main() -> None:
+    """Run the environment ASGI server natively."""
+    port_default = os.environ.get("PORT", "8000")
+    try:
+         port = int(port_default)
+    except ValueError:
+         port = 8000
+
     uvicorn.run(
         "server.app:app",
         host="0.0.0.0",

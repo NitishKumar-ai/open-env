@@ -1,7 +1,13 @@
-# OpenEnv Tasks for Code Security Review
-# These tasks are designed to test AI agents' ability to identify common security vulnerabilities.
+"""OpenEnv Tasks for Code Security Review.
 
-TASKS = {
+These task specifications are designed to rigorously test autonomous AI 
+agents' abilities to identify, classify, and mitigate common software
+security vulnerabilities across distinct language paradigms.
+"""
+
+from typing import Dict, Any
+
+TASKS: Dict[str, Any] = {
     "python-off-by-one": {
         "id": "python-off-by-one",
         "name": "Python Off-by-One Error",
