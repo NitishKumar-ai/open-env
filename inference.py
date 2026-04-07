@@ -109,64 +109,70 @@ def build_prompt(obs: dict) -> str:
 # ── Task runner ───────────────────────────────────────────────────────────────
 
 def run_task(task_id: str, task_num: int) -> dict:
-    reset_resp = env_post("/reset", params={"task_id": task_id})
-    obs = reset_resp["observation"]
-    
-    log_start(task=task_id, env=BENCHMARK, model=MODEL_NAME)
-
     cumulative_reward = 0.0
     step_num = 0
-    max_steps = 1 
     done = False
     all_rewards = []
-    error = None
+    success = False
 
-    while not done and step_num < max_steps:
-        step_num += 1
-        prompt = build_prompt(obs)
-        action_dict = {}
-
-        # ── LLM call ──────────────────────────────────────────────────────────
-        try:
-            response = client.chat.completions.create(
-                model=MODEL_NAME,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user",   "content": prompt},
-                ],
-                temperature=0.1,
-                max_tokens=600,
-                stream=False,
-            )
-            raw = response.choices[0].message.content
-            action_dict = parse_json_from_llm(raw)
-            action_str = json.dumps(action_dict)
-            error = None
-        except Exception as exc:
-            error = str(exc).replace("\n", " ")
-            action_dict = {
-                "bug_identified": False,
-                "bug_location": "none",
-                "bug_type": "none",
-                "bug_description": f"Error: {error}",
-                "severity": "none",
-                "suggested_fix": "none",
-            }
-            action_str = "{}"
-
-        # ── Step env ──────────────────────────────────────────────────────────
-        step_resp = env_post("/step", data=action_dict)
-        reward = step_resp["reward"]
-        done   = step_resp["done"]
-        obs    = step_resp.get("observation")
+    try:
+        reset_resp = env_post("/reset", params={"task_id": task_id})
+        obs = reset_resp["observation"]
         
-        all_rewards.append(reward)
-        cumulative_reward += reward
-        
-        log_step(step=step_num, action=action_str, reward=reward, done=done, error=error)
+        log_start(task=task_id, env=BENCHMARK, model=MODEL_NAME)
 
-    success = cumulative_reward >= 0.8
-    log_end(success=success, steps=step_num, score=cumulative_reward, rewards=all_rewards)
+        max_steps = 1 
+        error = None
+
+        while not done and step_num < max_steps:
+            step_num += 1
+            prompt = build_prompt(obs)
+            action_dict = {}
+
+            # ── LLM call ──────────────────────────────────────────────────────────
+            try:
+                response = client.chat.completions.create(
+                    model=MODEL_NAME,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user",   "content": prompt},
+                    ],
+                    temperature=0.1,
+                    max_tokens=600,
+                    stream=False,
+                )
+                raw = response.choices[0].message.content
+                action_dict = parse_json_from_llm(raw)
+                action_str = json.dumps(action_dict)
+                error = None
+            except Exception as exc:
+                error = str(exc).replace("\n", " ")
+                action_dict = {
+                    "bug_identified": False,
+                    "bug_location": "none",
+                    "bug_type": "none",
+                    "bug_description": f"Error: {error}",
+                    "severity": "none",
+                    "suggested_fix": "none",
+                }
+                action_str = "{}"
+
+            # ── Step env ──────────────────────────────────────────────────────────
+            step_resp = env_post("/step", data=action_dict)
+            reward = step_resp["reward"]
+            done   = step_resp["done"]
+            obs    = step_resp.get("observation")
+            
+            all_rewards.append(reward)
+            cumulative_reward += reward
+            
+            log_step(step=step_num, action=action_str, reward=reward, done=done, error=error)
+
+        success = cumulative_reward >= 0.8
+    except Exception as exc:
+        print(f"[ERROR] Exception during run_task: {exc}", flush=True)
+    finally:
+        log_end(success=success, steps=step_num, score=cumulative_reward, rewards=all_rewards)
 
     return {
         "task_num":        task_num,

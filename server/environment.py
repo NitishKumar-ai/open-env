@@ -45,7 +45,7 @@ class CodeSecurityEnv:
 
         # The action comes from the API as a Pydantic model (Action)
         # The grader expects a dict or the model itself.
-        reward, breakdown = grade_action(action, self.current_task)
+        reward, breakdown = grade_action(action.model_dump(), self.current_task)
 
         self.step_count += 1
         self.total_reward += reward

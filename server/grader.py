@@ -40,7 +40,8 @@ def grade_action(action: dict, task: dict) -> Tuple[float, Dict[str, float]]:
     if len(description) >= 20:
         task_keywords = task["keywords"]
         matched_kw = [kw for kw in task_keywords if kw in description]
-        desc_score = round(min(0.25, 0.25 * (len(matched_kw) / max(len(task_keywords), 1))), 4)
+        # Full points if they hit at least 3 keywords
+        desc_score = round(min(0.25, 0.25 * (len(matched_kw) / 3.0)), 4)
     breakdown["description_quality"] = desc_score
     reward += desc_score
 
@@ -50,7 +51,8 @@ def grade_action(action: dict, task: dict) -> Tuple[float, Dict[str, float]]:
     if len(fix) >= 10:
         fix_patterns = task["fix_patterns"]
         matched_fix = [p for p in fix_patterns if p.lower() in fix]
-        fix_score = round(min(0.15, 0.15 * (len(matched_fix) / max(len(fix_patterns), 1)) * 2), 4)
+        # Match any 1 pattern for full points
+        fix_score = round(min(0.15, 0.15 * len(matched_fix)), 4)
     breakdown["fix_quality"] = fix_score
     reward += fix_score
 

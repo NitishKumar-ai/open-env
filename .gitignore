@@ -1,5 +1,14 @@
 venv/
+.venv/
+env/
 __pycache__/
 *.pyc
 .DS_Store
 .env
+*.egg-info/
+build/
+dist/
+*.whl
+*.tar.gz
+.pytest_cache/
+.coverage
