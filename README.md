@@ -1,3 +1,12 @@
+---
+title: Code Security Review OpenEnv
+emoji: 🛡️
+colorFrom: gray
+colorTo: purple
+sdk: docker
+pinned: false
+---
+
 # Code Security Review — OpenEnv Environment
 
 An RL environment for training AI agents to perform real-world code security review.
