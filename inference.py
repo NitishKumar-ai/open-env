@@ -1,23 +1,22 @@
 """
 Baseline inference script for Code Security Review OpenEnv.
-
-Usage:
-    python inference.py
+Compliant with mandatory STDOUT format: [START], [STEP], [END].
 
 Required environment variables:
-    API_BASE_URL  — LLM API endpoint  (default: HF router)
-    MODEL_NAME    — Model identifier
-    HF_TOKEN      — Hugging Face / API key
-    ENV_BASE_URL  — Running environment URL (default: http://localhost:7860)
+    API_BASE_URL   — LLM API endpoint
+    MODEL_NAME     — Model identifier
+    HF_TOKEN       — Hugging Face / API key
+    ENV_BASE_URL   — Running environment URL (default: http://localhost:7860)
 """
 
 import os
 import json
 import time
 import re
+from typing import List, Optional
 from dotenv import load_dotenv
 
-# Load .env variables before anything else
+# Load .env variables
 load_dotenv()
 
 import requests
@@ -28,6 +27,7 @@ API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1"
 MODEL_NAME   = os.environ.get("MODEL_NAME",   "Qwen/Qwen2.5-72B-Instruct")
 HF_TOKEN     = os.environ.get("HF_TOKEN",     "")
 ENV_BASE_URL = os.environ.get("ENV_BASE_URL", "http://localhost:7860")
+BENCHMARK    = "code-review-env"
 
 client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
@@ -47,9 +47,26 @@ Schema:
   "suggested_fix": "the corrected code snippet or a precise description of the fix"
 }"""
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Logging Helpers ───────────────────────────────────────────────────────────
 
-from typing import Optional
+def log_start(task: str, env: str, model: str) -> None:
+    print(f"[START] task={task} env={env} model={model}", flush=True)
+
+
+def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
+    error_val = error if error else "null"
+    done_val = str(done).lower()
+    print(
+        f"[STEP] step={step} action={action} reward={reward:.2f} done={done_val} error={error_val}",
+        flush=True,
+    )
+
+
+def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
+    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
+    print(f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}", flush=True)
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def env_post(path: str, data: Optional[dict] = None, params: Optional[dict] = None) -> dict:
     url = f"{ENV_BASE_URL}{path}"
@@ -59,9 +76,8 @@ def env_post(path: str, data: Optional[dict] = None, params: Optional[dict] = No
 
 
 def parse_json_from_llm(text: str) -> dict:
-    """Robustly extract JSON from LLM output, stripping markdown fences."""
+    """Robustly extract JSON from LLM output."""
     text = text.strip()
-    # Strip ```json ... ``` or ``` ... ```
     text = re.sub(r"^```(?:json)?\s*", "", text)
     text = re.sub(r"\s*```$", "", text)
     return json.loads(text)
@@ -84,22 +100,23 @@ def build_prompt(obs: dict) -> str:
 
 # ── Task runner ───────────────────────────────────────────────────────────────
 
-def run_task(difficulty: str, task_num: int) -> dict:
+def run_task(difficulty: str) -> dict:
     reset_resp = env_post("/reset", params={"difficulty": difficulty})
     obs = reset_resp["observation"]
+    task_id = obs['task_id']
 
-    print(f"[START] task={task_num} difficulty={difficulty} task_id={obs['task_id']} max_steps={obs['max_steps']}")
+    log_start(task=task_id, env=BENCHMARK, model=MODEL_NAME)
 
-    cumulative_reward = 0.0
-    step_num = 0
+    rewards = []
+    steps_taken = 0
     done = False
+    last_error = None
 
-    while not done and step_num < obs["max_steps"]:
-        step_num += 1
+    while not done and steps_taken < obs["max_steps"]:
+        steps_taken += 1
         prompt = build_prompt(obs)
 
         # ── LLM call ──────────────────────────────────────────────────────────
-        t0 = time.time()
         try:
             response = client.chat.completions.create(
                 model=MODEL_NAME,
@@ -112,74 +129,62 @@ def run_task(difficulty: str, task_num: int) -> dict:
             )
             raw = response.choices[0].message.content
             action_dict = parse_json_from_llm(raw)
+            action_str = json.dumps(action_dict)
+            last_error = None
         except Exception as exc:
-            print(f"[ERROR] task={task_num} step={step_num} llm_error={exc}")
+            last_error = str(exc)
             action_dict = {
                 "bug_identified": False,
-                "bug_location": "",
+                "bug_location": "error",
                 "bug_type": "none",
-                "bug_description": "",
+                "bug_description": last_error,
                 "severity": "none",
                 "suggested_fix": "",
             }
-        latency = round(time.time() - t0, 2)
+            action_str = "{}"
 
         # ── Step env ──────────────────────────────────────────────────────────
         step_resp = env_post("/step", data=action_dict)
         reward = step_resp["reward"]
         done   = step_resp["done"]
         obs    = step_resp["observation"]
-        info   = step_resp.get("info", {})
+        
+        rewards.append(reward)
+        log_step(step=steps_taken, action=action_str, reward=reward, done=done, error=last_error)
 
-        cumulative_reward += reward
+    # Calculate final score (normalized to [0, 1])
+    # Total reward is cumulative in this env, but we cap it at 1.0 for the score
+    total_reward = sum(rewards)
+    score = min(max(total_reward, 0.0), 1.0)
+    success = score >= 0.8
 
-        print(
-            f"[STEP] task={task_num} step={step_num} "
-            f"reward={reward:.3f} cumulative={cumulative_reward:.3f} "
-            f"done={done} latency_s={latency}"
-        )
-
-    result = {
-        "task_num":        task_num,
-        "difficulty":      difficulty,
-        "total_reward":    round(cumulative_reward, 3),
-        "steps_taken":     step_num,
-        "success":         cumulative_reward >= 0.8,
+    log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+    
+    return {
+        "task_id": task_id,
+        "score": score,
+        "success": success
     }
-    print(
-        f"[END] task={task_num} difficulty={difficulty} "
-        f"total_reward={result['total_reward']} success={result['success']}"
-    )
-    return result
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    print(f"[INFO] model={MODEL_NAME} env={ENV_BASE_URL}")
-
-    tasks = [
-        ("easy",   1),
-        ("medium", 2),
-        ("hard",   3),
-    ]
+    tasks = ["easy", "medium", "hard"]
     results = []
 
-    for difficulty, task_num in tasks:
+    for difficulty in tasks:
         try:
-            r = run_task(difficulty, task_num)
+            r = run_task(difficulty)
+            results.append(r)
         except Exception as exc:
-            print(f"[ERROR] task={task_num} difficulty={difficulty} error={exc}")
-            r = {"task_num": task_num, "difficulty": difficulty,
-                 "total_reward": 0.0, "success": False}
-        results.append(r)
+            # print(f"DEBUG: Task failed: {exc}", flush=True)
+            log_end(success=False, steps=0, score=0.0, rewards=[])
 
-    avg = round(sum(r["total_reward"] for r in results) / len(results), 3)
-    successes = sum(1 for r in results if r.get("success"))
-    print(f"\n[SUMMARY] avg_reward={avg} tasks_passed={successes}/{len(results)}")
-    for r in results:
-        print(f"  [{r['difficulty']:6}] reward={r['total_reward']:.3f} success={r.get('success', False)}")
-
+    if results:
+        avg = sum(r["score"] for r in results) / len(results)
+        # Optional: summary for human review (will not interfere with [END] parsers)
+        # print(f"\n[SUMMARY] avg_score={avg:.3f}")
 
 if __name__ == "__main__":
     main()

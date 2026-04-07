@@ -144,6 +144,147 @@ TASKS: Dict[str, dict] = {
             "severity_valid": ["critical"],
         },
     },
+
+    # ── EXPERT ────────────────────────────────
+    "expert": {
+        "id": "task_expert_001",
+        "difficulty": "expert",
+        "language": "java",
+        "description": (
+            "This Java class implements a token bucket rate limiter. "
+            "Identify the logic bug that could allow users to bypass the rate limit."
+        ),
+        "code": (
+            "import java.util.concurrent.atomic.AtomicLong;\n\n"
+            "public class TokenBucketRateLimiter {\n"
+            "    private final long maxTokens;\n"
+            "    private final long refillRatePerSecond;\n"
+            "    private AtomicLong currentTokens;\n"
+            "    private AtomicLong lastRefillTimestamp;\n\n"
+            "    public TokenBucketRateLimiter(long maxTokens, long refillRatePerSecond) {\n"
+            "        this.maxTokens = maxTokens;\n"
+            "        this.refillRatePerSecond = refillRatePerSecond;\n"
+            "        this.currentTokens = new AtomicLong(maxTokens);\n"
+            "        this.lastRefillTimestamp = new AtomicLong(System.currentTimeMillis());\n"
+            "    }\n\n"
+            "    /**\n"
+            "     * Checks if the requested number of tokens is available.\n"
+            "     * Decrements the bucket if allowed.\n"
+            "     */\n"
+            "    public synchronized boolean allowRequest(int tokensNeeded) {\n"
+            "        refill();\n"
+            "        if (currentTokens.get() >= tokensNeeded) {\n"
+            "            currentTokens.addAndGet(-tokensNeeded);\n"
+            "            return true;\n"
+            "        }\n"
+            "        return false;\n"
+            "    }\n\n"
+            "    private void refill() {\n"
+            "        long now = System.currentTimeMillis();\n"
+            "        long timeElapsedMs = now - lastRefillTimestamp.get();\n"
+            "        \n"
+            "        // Calculate how many tokens to add based on time elapsed\n"
+            "        long tokensToAdd = (timeElapsedMs / 1000) * refillRatePerSecond;\n\n"
+            "        if (tokensToAdd > 0) {\n"
+            "            // Hint: Look closely at how the tokens are updated here.\n"
+            "            // Consider what happens if a user stops making requests for a long time.\n"
+            "            currentTokens.addAndGet(tokensToAdd);\n"
+            "            lastRefillTimestamp.set(now);\n"
+            "        }\n"
+            "    }\n"
+            "}"
+        ),
+        "ground_truth": {
+            "bug_identified": True,
+            "bug_type_keywords": [
+                "logic", "limit", "overflow", "cap", "bound", "maximum", "exceed",
+                "logic error", "capacity",
+            ],
+            "location_keywords": [
+                "currentTokens.addAndGet", "refill()", "tokensToAdd",
+                "currentTokens.get()", "addAndGet(tokensToAdd)",
+            ],
+            "description_keywords": [
+                "exceed", "maxTokens", "cap", "limit", "bound",
+                "overflow", "infinite", "burst", "accumulate",
+            ],
+            "fix_keywords": [
+                "Math.min", "min(", "set(", "if (currentTokens.get() > maxTokens)",
+                "compareAndSet", "cap",
+            ],
+            "severity_valid": ["high", "medium"],
+        },
+    },
+
+    # ── EXPERT 2 (C++) ────────────────────────
+    "expert2": {
+        "id": "task_expert_002",
+        "difficulty": "expert2",
+        "language": "cpp",
+        "description": (
+            "This C++ class implements an event dispatcher. "
+            "Identify the concurrency bug that can occur when an event is dispatched."
+        ),
+        "code": (
+            "#include <iostream>\n"
+            "#include <vector>\n"
+            "#include <functional>\n"
+            "#include <mutex>\n"
+            "#include <algorithm>\n"
+            "#include <string>\n\n"
+            "class EventDispatcher {\n"
+            "public:\n"
+            "    using Callback = std::function<void(const std::string&)>;\n\n"
+            "    void subscribe(int listener_id, Callback cb) {\n"
+            "        std::lock_guard<std::mutex> lock(mut_);\n"
+            "        listeners_.push_back({listener_id, cb});\n"
+            "    }\n\n"
+            "    void unsubscribe(int listener_id) {\n"
+            "        std::lock_guard<std::mutex> lock(mut_);\n"
+            "        listeners_.erase(\n"
+            "            std::remove_if(listeners_.begin(), listeners_.end(),\n"
+            "                [listener_id](const Listener& l) { return l.id == listener_id; }),\n"
+            "            listeners_.end()\n"
+            "        );\n"
+            "    }\n\n"
+            "    void dispatch(const std::string& event_data) {\n"
+            "        std::lock_guard<std::mutex> lock(mut_);\n"
+            "        for (const auto& listener : listeners_) {\n"
+            "            // Hint: What happens if a listener decides to call unsubscribe() \n"
+            "            // from inside their own callback function when an event fires?\n"
+            "            listener.cb(event_data);\n"
+            "        }\n"
+            "    }\n\n"
+            "private:\n"
+            "    struct Listener {\n"
+            "        int id;\n"
+            "        Callback cb;\n"
+            "    };\n    \n"
+            "    std::vector<Listener> listeners_;\n"
+            "    std::mutex mut_;\n"
+            "};"
+        ),
+        "ground_truth": {
+            "bug_identified": True,
+            "bug_type_keywords": [
+                "deadlock", "concurrency", "lock", "recursive", "reentrant", "hang",
+                "iterator validation", "undefined behavior"
+            ],
+            "location_keywords": [
+                "listener.cb", "unsubscribe", "dispatch", "mut_", "std::lock_guard",
+                "lock(mut_)"
+            ],
+            "description_keywords": [
+                "deadlock", "already locked", "same thread", "recursive_mutex",
+                "reentrant", "hangs", "blocks", "invalidate", "iterator"
+            ],
+            "fix_keywords": [
+                "std::recursive_mutex", "copy", "local copy", "copy the vector",
+                "unlock before", "queue", "deferred"
+            ],
+            "severity_valid": ["high", "critical"],
+        },
+    },
 }
 
 
