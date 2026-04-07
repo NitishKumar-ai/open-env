@@ -21,7 +21,7 @@ dependencies = [
 requires-python = ">=3.9"
 
 [project.scripts]
-code-security-review = "server.app:main"
+server = "server.app:main"
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.md", "*.py"]
