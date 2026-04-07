@@ -24,14 +24,13 @@ TASKS = {
         "keywords": [
             "off-by-one", "index", "error", "range", "length", "loop", "extra", 
             "out of bounds", "indexerror", "end", "one past", "terminates", 
-            "iteration", "boundary", "array", "transactions", "last"
+            "iteration", "boundary", "array", "transactions", "last",
+            "overflow", "stop-condition", "size", "pointer"
         ],
         "fix_patterns": [
             "range(len(transactions))",
             "enumerate(transactions)",
-            "for tx in transactions",
-            "len(transactions)",
-            "0, len(transactions)"
+            "for tx in transactions"
         ],
     },
 
@@ -57,16 +56,14 @@ TASKS = {
         "bug_location": "line 3 — incorrect boolean operator || instead of && allows any active user",
         "severity": "critical",
         "keywords": [
-            "logic", "operator", "operator mistake", "boolean", "disjunction", 
-            "escalation", "bypass", "checkAdmin", "admin", "role", "active", 
-            "isActive", "should be and", "should be &&", "or", "security barrier"
+            "logic", "operator", "boolean", "disjunction", "escalation", "bypass", "checkAdmin", 
+            "admin", "role", "active", "isActive", "mistake", "security", "authorization",
+            "middleware", "express", "res.status", "next", "auth", "permission", "user", "access"
         ],
         "fix_patterns": [
             "user.role === \"admin\" && user.isActive",
             "&& user.isActive",
-            "throw new Error(\"Unauthorized\")",
-            "user.role === 'admin' && user.isActive",
-            "middleware logic fix"
+            "throw new Error(\"Unauthorized\")"
         ],
     },
 
@@ -89,16 +86,16 @@ TASKS = {
         "bug_location": "line 2 — f-string interpolation directly in SQL query",
         "severity": "critical",
         "keywords": [
-            "interpolated", "f-string", "format", "string", "concatenation",
-            "exfiltrate", "malicious", "union", "tautology", "attack",
-            "vulnerability", "sanitization", "validation", "parameterized", "query"
+            "interpolated", "f-string", "SQLi", "vector", "injection-flaw", "binding-hazard",
+            "sanitization-gap", "DBAPI-compliance", "concatenation-pattern", "raw-sql",
+            "prepared-statement-fix", "parameterized-query-binding", "placeholder-syntax",
+            "SQL-interpolation", "driver-protocol", "malicious-input-flow", "exfiltration-risk",
+            "second-order-injection", "blind-sql-injection", "union-based-attack"
         ],
         "fix_patterns": [
             "execute(query, (search_term,))",
             "bind variables",
-            "parameterized query",
-            "query parameters",
-            "DBAPI parameter"
+            "parameterized query"
         ],
     },
 }

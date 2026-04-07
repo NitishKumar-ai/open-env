@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "code-security-review"
+version = "1.0.0"
+description = "RL environment for training AI agents to perform code security review."
+authors = [
+  { name="Inmodel Labs", email="support@inmodel.ai" },
+]
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.6",
+  "pydantic>=2.7.4",
+  "requests>=2.32.3",
+  "python-dotenv>=1.0.0",
+  "openai>=1.30.0",
+  "openenv-core>=0.2.3",
+]
+requires-python = ">=3.9"
+
+[project.scripts]
+code-security-review = "server.app:main"
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.md", "*.py"]

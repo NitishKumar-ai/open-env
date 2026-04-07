@@ -70,7 +70,7 @@ def grade_action(action: dict, task: dict) -> Tuple[float, Dict[str, float]]:
     description = action.get("bug_description", "").lower()
     words = description.split()
     unique_ratio = len(set(words)) / len(words) if words else 1.0
-    if unique_ratio < 0.7:
+    if unique_ratio < 0.5:
         reward *= 0.2  # Heavy global penalty
         breakdown["stuffing_penalty_multiplier"] = 0.2
         for k in list(breakdown.keys()):

@@ -74,7 +74,8 @@ def state():
     return env.state()
 
 
-if __name__ == "__main__":
+def main():
+    """Run the environment server."""
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(
         "server.app:app",
@@ -82,3 +83,7 @@ if __name__ == "__main__":
         port=port,
         reload=False,
     )
+
+
+if __name__ == "__main__":
+    main()
