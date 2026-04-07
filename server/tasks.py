@@ -1,40 +1,37 @@
+# OpenEnv Tasks for Code Security Review
+# These tasks are designed to test AI agents' ability to identify common security vulnerabilities.
+
 TASKS = {
     "python-off-by-one": {
         "id": "python-off-by-one",
         "name": "Python Off-by-One Error",
         "language": "Python",
         "difficulty": "easy",
-        "bug_class": "Off-by-one index error",
-        "pr_title": "Add batch processor for financial transactions",
-        "file_path": "finance/batch_processor.py",
-        "context": "Finance batch processor that sums transaction amounts for end-of-day reconciliation",
+        "bug_class": "Index Error / Off-by-one",
+        "pr_title": "Update finance batch processor for transactions",
+        "file_path": "finance/processor.py",
+        "context": "Process numeric transaction data for weekly reporting",
         "code_snippet": (
-            "def process_transactions(transactions):\n"
+            "def calculate_total(transactions):\n"
             "    total = 0\n"
-            "    for i in range(len(transactions) + 1):  # iterates one past end\n"
-            "        total += transactions[i][\"amount\"]\n"
+            "    for i in range(len(transactions) + 1):\n"
+            "        total += transactions[i]\n"
             "    return total"
         ),
         "bug_type": "off-by-one",
-        "bug_location": "line 3 — range(len(transactions) + 1)",
-        "severity": "critical",
+        "bug_location": "line 3 — loop range(len(transactions) + 1) incorrectly iterates one past the end",
+        "severity": "medium",
         "keywords": [
-            "off-by-one", "index", "range", "indexerror", "out of bounds",
-            "boundary", "overflow", "iteration", "list length", "plus one",
-            "extra step", "fencepost error", "array access", "iterator",
-            "fix", "bug", "identify", "code", "crash", "out-of-range",
-            "python", "finance", "batch", "amount", "total", "transactions",
-            "iterate", "sum", "loop", "account", "process"
+            "off-by-one", "index", "error", "range", "length", "loop", "extra", 
+            "out of bounds", "indexerror", "end", "one past", "terminates", 
+            "iteration", "boundary", "array", "transactions", "last"
         ],
         "fix_patterns": [
             "range(len(transactions))",
-            "len(transactions))",
-            "for transaction in transactions",
-            "in transactions:",
-            "pop()",
             "enumerate(transactions)",
-            "transactions[:len(transactions)]",
-            "total += transactions[i]"
+            "for tx in transactions",
+            "len(transactions)",
+            "0, len(transactions)"
         ],
     },
 
@@ -43,10 +40,10 @@ TASKS = {
         "name": "JavaScript Auth Logic Flaw",
         "language": "JavaScript",
         "difficulty": "medium",
-        "bug_class": "Logic flaw — privilege escalation",
-        "pr_title": "Refactor auth middleware for API routes",
+        "bug_class": "Privilege Escalation / Logic Flaw",
+        "pr_title": "Implement admin middleware for dashboard",
         "file_path": "middleware/auth.js",
-        "context": "Node.js authentication middleware that restricts admin-only API routes",
+        "context": "Node.js/Express middleware to restrict access to admin routes",
         "code_snippet": (
             "function checkAdmin(req, res, next) {\n"
             "    const user = req.user;\n"
@@ -57,16 +54,12 @@ TASKS = {
             "}"
         ),
         "bug_type": "logic-error",
-        "bug_location": "line 3 — incorrect boolean operator || instead of &&",
+        "bug_location": "line 3 — incorrect boolean operator || instead of && allows any active user",
         "severity": "critical",
         "keywords": [
-            "short-circuit disjunction hazard", "logical disjunction vulnerability",
-            "excessive authorization scope", "privilege escalation vector",
-            "boolean logic flaw pattern", "operator precedence violation",
-            "authorization bypass disjunction logic", "improper validation layer check",
-            "role check disjunction pattern match", "permission leak evaluation flow",
-            "evaluation shortcut logic flaw", "middleware logic hazard state",
-            "security constraint bypass", "access control logic inversion"
+            "logic", "operator", "operator mistake", "boolean", "disjunction", 
+            "escalation", "bypass", "checkAdmin", "admin", "role", "active", 
+            "isActive", "should be and", "should be &&", "or", "security barrier"
         ],
         "fix_patterns": [
             "user.role === \"admin\" && user.isActive",
@@ -96,15 +89,16 @@ TASKS = {
         "bug_location": "line 2 — f-string interpolation directly in SQL query",
         "severity": "critical",
         "keywords": [
-            "sql injection", "user-supplied", "search_term", "interpolated", "f-string",
-            "attacker", "bypass", "authentication", "exfiltrate", "user data",
-            "drop tables", "parameterized", "queries", "sanitize", "input", "automatically"
+            "interpolated", "f-string", "format", "string", "concatenation",
+            "exfiltrate", "malicious", "union", "tautology", "attack",
+            "vulnerability", "sanitization", "validation", "parameterized", "query"
         ],
         "fix_patterns": [
-            "db.execute('SELECT * FROM users WHERE name LIKE %s', ('%'+search_term+'%',))",
-            "%s",
-            "parameterized",
-            "prepared statement"
+            "execute(query, (search_term,))",
+            "bind variables",
+            "parameterized query",
+            "query parameters",
+            "DBAPI parameter"
         ],
     },
 }
