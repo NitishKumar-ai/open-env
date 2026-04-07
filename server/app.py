@@ -1,19 +1,16 @@
 import os
 import uvicorn
+from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
-from .models import CodeReviewAction, CodeReviewState, StepResponse, ResetResponse
-from .environment import CodeReviewEnvironment
+from server.models import CodeReviewAction, StepResult, ResetResponse, StateResponse, TaskInfo
+from server.tasks import TASKS
+from server.environment import CodeSecurityEnv
 
 app = FastAPI(
     title="Code Security Review — OpenEnv",
-    description=(
-        "RL environment for training AI agents to detect bugs and security "
-        "vulnerabilities in code. Compatible with the OpenEnv spec."
-    ),
+    description="An RL environment for training AI agents to perform code security review.",
     version="1.0.0",
 )
 
@@ -24,46 +21,61 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+env = CodeSecurityEnv()
 
-env = CodeReviewEnvironment()
 
 @app.get("/")
-def read_index():
-    return FileResponse("static/index.html")
-
-
-@app.get("/health")
 def health():
-    return {"status": "ok", "env": "code-review-env", "version": "1.0.0"}
+    """Health check endpoint."""
+    return {
+        "status": "ok",
+        "project": "Code Security Review - OpenEnv",
+        "version": "1.0.0",
+        "organization": "Inmodel Labs",
+    }
+
+
+@app.get("/tasks", response_model=List[TaskInfo])
+def list_tasks():
+    """List all available tasks."""
+    return [
+        TaskInfo(
+            id=t["id"],
+            language=t["language"],
+            bug_class=t["bug_class"],
+            difficulty=t["difficulty"],
+        )
+        for t in TASKS.values()
+    ]
 
 
 @app.post("/reset", response_model=ResetResponse)
-def reset(difficulty: str = Query(default="easy", description="easy | medium | hard")):
+def reset(
+    task_id: str = Query(default="python-off-by-one", description="Task ID to reset to"),
+    seed: Optional[int] = Query(default=None, description="Optional seed for reproducibility")
+):
     """Reset the environment and return the first observation."""
-    obs = env.reset(difficulty=difficulty)
+    if task_id not in TASKS:
+        raise HTTPException(status_code=404, detail=f"Task '{task_id}' not found.")
+    obs = env.reset(task_id=task_id, seed=seed)
     return ResetResponse(observation=obs)
 
 
-@app.post("/step", response_model=StepResponse)
+@app.post("/step", response_model=StepResult)
 def step(action: CodeReviewAction):
     """Submit a code review action and receive a reward signal."""
-    try:
-        obs, reward, done, info = env.step(action)
-        return StepResponse(observation=obs, reward=reward, done=done, info=info)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+    result = env.step(action)
+    return result
 
 
-@app.get("/state", response_model=CodeReviewState)
+@app.get("/state", response_model=StateResponse)
 def state():
     """Return the current environment state."""
     return env.state()
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 7860))
-    enable_web = os.environ.get("ENABLE_WEB_INTERFACE", "false").lower() == "true"
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(
         "server.app:app",
         host="0.0.0.0",

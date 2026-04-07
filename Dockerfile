@@ -7,11 +7,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY server/ ./server/
-COPY static/ ./static/
+# Copy all project files (needed for openenv validate to work inside)
+COPY . .
 
-# Environment defaults
+# Environment defaults (Hugging Face Spaces use 7860)
 ENV PORT=7860
 ENV PYTHONPATH=/app
 ENV ENABLE_WEB_INTERFACE=false

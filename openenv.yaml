@@ -1,47 +1,50 @@
-name: code-review-env
-version: 1.0.0
+# OpenEnv Environment Specification
+# This file describes the Code Security Review environment for the Meta PyTorch OpenEnv Hackathon.
+
+# Metadata section details the environment's identity.
+name: code-security-review
+version: "1.0.0"
 description: >
-  RL environment for training AI agents to detect bugs and security
-  vulnerabilities in real Python code. Covers off-by-one errors,
-  authentication logic flaws, and SQL injection — with deterministic
-  programmatic graders and partial-progress reward signals.
-
+  An RL environment for training AI agents to perform code security review.
+  Agents analyze code snippets from production pull requests and identify bugs,
+  vulnerabilities, and security issues.
 author: Inmodel Labs
-tags:
-  - code-review
-  - security
-  - software-engineering
-  - real-world
-  - python
 
+# Tasks section defines the core challenges in the environment.
+# Each task has a unique ID, name, description, and difficulty level.
 tasks:
-  - id: task_easy_001
+  - id: python-off-by-one
+    name: "Python Off-by-One Error"
+    description: "Identify an off-by-one index error in a Python finance batch processor"
     difficulty: easy
-    description: "Detect off-by-one error in array traversal loop"
-    reset_params:
-      difficulty: easy
+    max_steps: 1
+    reward_range: [0.0, 1.0]
 
-  - id: task_medium_001
+  - id: js-auth-privilege
+    name: "JavaScript Auth Logic Flaw"
+    description: "Identify a privilege escalation vulnerability in Node.js auth middleware"
     difficulty: medium
-    description: "Detect authentication logic flaw enabling privilege escalation"
-    reset_params:
-      difficulty: medium
+    max_steps: 1
+    reward_range: [0.0, 1.0]
 
-  - id: task_hard_001
+  - id: python-sql-injection
+    name: "Python SQL Injection"
+    description: "Identify an SQL injection vulnerability via f-string in a REST API"
     difficulty: hard
-    description: "Detect SQL injection via unsanitised f-string database query"
-    reset_params:
-      difficulty: hard
+    max_steps: 1
+    reward_range: [0.0, 1.0]
 
+# The Action space defines the format of the agent's response.
+# Each field is scored by the grader to provide partial progress signals.
 action_space:
   type: object
   properties:
-    bug_identified:   { type: boolean }
-    bug_location:     { type: string }
-    bug_type:         { type: string }
-    bug_description:  { type: string }
-    severity:         { type: string, enum: [none, low, medium, high, critical] }
-    suggested_fix:    { type: string }
+    bug_identified:   { type: boolean, description: "Boolean: true if a bug exists" }
+    bug_location:     { type: string, description: "String: Pinpoint the bug's location in code" }
+    bug_type:         { type: string, description: "String: off-by-one | logic-error | security-vulnerability | none" }
+    bug_description:  { type: string, description: "String: Detailed analysis of the vulnerability" }
+    severity:         { type: string, enum: [none, low, medium, high, critical], description: "String: none | low | medium | high | critical" }
+    suggested_fix:    { type: string, description: "String: How to fix the identified bug" }
   required:
     - bug_identified
     - bug_location
@@ -50,18 +53,20 @@ action_space:
     - severity
     - suggested_fix
 
+# The Observation space defines what the agent sees at each step.
+# It uses a structured context to help the agent understand the code's purpose.
 observation_space:
   type: object
   properties:
-    code_snippet:       { type: string }
-    language:           { type: string }
-    task_description:   { type: string }
-    task_id:            { type: string }
-    difficulty:         { type: string, enum: [easy, medium, hard] }
-    step_number:        { type: integer }
-    max_steps:          { type: integer }
-    previous_feedback:  { type: string, nullable: true }
+    task_id:            { type: string, description: "Unique task identifier" }
+    language:           { type: string, description: "Source code language" }
+    difficulty:         { type: string, enum: [easy, medium, hard], description: "Task complexity (easy/medium/hard)" }
+    code_snippet:       { type: string, description: "The source code to be reviewed" }
+    context:            { type: string, description: "Real-world context (e.g., API description)" }
+    pr_title:           { type: string, description: "Pull Request title for additional intent context" }
+    file_path:          { type: string, description: "Relative path to the file in the repository" }
 
+# Reward structure for evaluating agent performance.
 reward:
   min: 0.0
   max: 1.0
@@ -69,9 +74,11 @@ reward:
     Partial rewards for: bug identification (0.20), correct bug type (0.20),
     precise location (0.10), description quality (0.25, keyword density),
     fix quality (0.15, keyword density), correct severity (0.10).
+    Grader penalizes keyword stuffing.
 
 endpoints:
-  health: GET  /health
-  reset:  POST /reset
-  step:   POST /step
-  state:  GET  /state
+  health: GET /
+  reset: POST /reset
+  step: POST /step
+  state: GET /state
+  tasks: GET /tasks

@@ -1,119 +1,90 @@
----
-title: Code Review Env
-emoji: 🏃
-colorFrom: red
-colorTo: purple
-sdk: docker
-pinned: false
----
-# Code Security Review — OpenEnv
+# Code Security Review — OpenEnv Environment
 
-> An RL environment for training AI agents to detect bugs and security
-> vulnerabilities in Python code.
+An RL environment for training AI agents to perform real-world code security review.
+Agents analyze code snippets from production pull requests and identify bugs,
+vulnerabilities, and security issues.
 
-## Motivation
-
-Code review is one of the highest-leverage tasks in software engineering, yet it
-remains bottlenecked on human attention. This environment trains agents to catch
-real bug categories — from simple off-by-one errors to critical SQL injection
-vulnerabilities — using structured, deterministic reward signals.
+Built by **Inmodel Labs** for the Meta PyTorch OpenEnv Hackathon.
 
 ---
 
-## Action Space
+## Environment Overview
 
-| Field | Type | Description |
-|---|---|---|
-| `bug_identified` | bool | Whether a bug was found |
-| `bug_location` | string | Exact location (function, expression) |
-| `bug_type` | string | `off-by-one`, `logic-error`, `security-vulnerability`, `none` |
-| `bug_description` | string | Explanation of the bug and its impact |
-| `severity` | string | `none` / `low` / `medium` / `high` / `critical` |
-| `suggested_fix` | string | Corrected code or fix description |
-
-## Observation Space
-
-| Field | Type | Description |
-|---|---|---|
-| `code_snippet` | string | The code to review |
-| `language` | string | Programming language |
-| `task_description` | string | What the code is supposed to do |
-| `task_id` | string | Unique task identifier |
-| `difficulty` | string | `easy` / `medium` / `hard` |
-| `step_number` | int | Current step within the episode |
-| `max_steps` | int | Maximum steps allowed (3) |
-| `previous_feedback` | string? | Feedback from prior step |
+| Field | Value |
+|---|---|
+| Tasks | 3 (easy → medium → hard) |
+| Languages | Python, JavaScript |
+| Action space | Structured JSON (6 fields) |
+| Reward range | 0.0 – 1.0 |
+| Steps per episode | 1 |
 
 ---
 
 ## Tasks
 
-### Easy — Off-by-one in array traversal
-- **Code:** `sum_elements(arr)` iterates `range(1, len(arr)+1)` causing `IndexError`
-- **Expected bug type:** `off-by-one`
-- **Expected severity:** `high`
-- **Baseline score:** ~0.72
-
-### Medium — Authentication logic flaw
-- **Code:** `authenticate_user()` uses `or` instead of `and` for admin check
-- **Expected bug type:** `logic-error`
-- **Expected severity:** `critical`
-- **Baseline score:** ~0.60
-
-### Hard — SQL injection via f-string
-- **Code:** `fetch_records()` interpolates `user_id` and `sort_column` directly into SQL
-- **Expected bug type:** `security-vulnerability`
-- **Expected severity:** `critical`
-- **Baseline score:** ~0.55
+| ID | Language | Bug Class | Difficulty |
+|---|---|---|---|
+| `python-off-by-one` | Python | Off-by-one index error | Easy |
+| `js-auth-privilege` | JavaScript | Logic flaw — privilege escalation | Medium |
+| `python-sql-injection` | Python | SQL injection via f-string | Hard |
 
 ---
 
-## Reward Function
+## Action Space
 
-Rewards are deterministic and provide partial progress signal:
+The agent submits a JSON action with these fields:
 
-| Component | Max Score | Description |
-|---|---|---|
-| Bug identified | 0.20 | Correctly flags presence/absence of bug |
-| Bug type | 0.20 | Correct category of bug |
-| Bug location | 0.10 | Precise location identified |
-| Description quality | 0.25 | Keyword density in explanation |
-| Fix quality | 0.15 | Correct fix keywords present |
-| Severity | 0.10 | Correct severity level |
-| **Total** | **1.00** | |
+```json
+{
+  "bug_identified": true,
+  "bug_location": "line 3 — range(len(transactions) + 1)",
+  "bug_type": "logic-error",
+  "bug_description": "Off-by-one error causes IndexError on last iteration...",
+  "severity": "medium",
+  "suggested_fix": "Change range(len(transactions) + 1) to range(len(transactions))"
+}
+```
+
+## Observation Space
+
+```json
+{
+  "task_id": "python-sql-injection",
+  "language": "Python",
+  "difficulty": "hard",
+  "code_snippet": "def search_users(db, search_term):\n    ...",
+  "context": "REST API endpoint that searches users by name",
+  "pr_title": "Add user search endpoint to REST API",
+  "file_path": "api/users.py"
+}
+```
 
 ---
 
-## Setup
+## Reward Breakdown
 
-### 1. Build and run Docker
+| Component | Max Score |
+|---|---|
+| Bug identified | 0.20 |
+| Bug type correct | 0.20 |
+| Bug location correct | 0.10 |
+| Description quality | 0.25 |
+| Fix quality | 0.15 |
+| Severity correct | 0.10 |
+| **Total** | **1.00** |
 
-```bash
-docker build -t code-review-env .
-docker run -p 7860:7860 code-review-env
-```
+The grader penalises keyword stuffing — incoherent keyword dumps score ≤ 0.20.
 
-### 2. Run inference baseline
+**Example Calculation:**
+If the agent correctly identifies a bug (+0.20), misidentifies the type (+0.0), finds 50% of the location keywords (+0.05), writes a detailed and coherent description matching most keywords (+0.25), suggests a partially correct fix (+0.08), and gets the severity correct (+0.10), the total reward for that step would be `0.20 + 0.0 + 0.05 + 0.25 + 0.08 + 0.10 = 0.68`.
 
-```bash
-# Set your environment variables
-export HF_TOKEN=hf_your_token_here
-export MODEL_NAME=Qwen/Qwen2.5-72B-Instruct
-export API_BASE_URL=https://router.huggingface.co/v1
-export ENV_BASE_URL=http://localhost:7860
+---
 
-# Install dependencies
-pip install -r requirements.txt
+## Edge Cases
 
-# Run
-python inference.py
-```
-
-### 3. Validate (OpenEnv CLI)
-
-```bash
-openenv validate
-```
+- **At step 0:** `reset()` must be called to initialize the state. If `step()` is called before `reset()`, the environment automatically calls `reset()` internally and evaluates the action on a random task.
+- **Max step limit:** The maximum step limit is 1. Calling `step()` evaluates the action and immediately sets `done=True`.
+- **At done=True:** Calling `step()` returns `reward=0.0`, `done=True`, and a clean error message in the `info` dict `("Episode already completed. Call /reset...")` indicating the episode is complete without auto-resetting.
 
 ---
 
@@ -121,36 +92,39 @@ openenv validate
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/health` | Health check |
-| POST | `/reset?difficulty=easy` | Reset environment |
-| POST | `/step` | Submit a review action |
+| GET | `/` | Health check |
+| POST | `/reset?task_id=<id>` | Reset environment, returns observation |
+| POST | `/step` | Submit action, returns reward |
 | GET | `/state` | Current episode state |
+| GET | `/tasks` | List all tasks |
 
 ---
 
-## Baseline Scores
+## Setup
 
-| Task | Difficulty | Reward |
-|---|---|---|
-| Off-by-one detection | Easy | ~0.72 |
-| Auth logic flaw | Medium | ~0.60 |
-| SQL injection | Hard | ~0.55 |
-| **Average** | | **~0.62** |
+### Docker
 
----
-
-## Project Structure
-
+```bash
+docker build -t code-security-review .
+docker run -p 8000:8000 code-security-review
 ```
-code-review-env/
-├── Dockerfile
-├── openenv.yaml
-├── requirements.txt
-├── inference.py
-├── README.md
-└── server/
-    ├── __init__.py
-    ├── app.py          # FastAPI endpoints
-    ├── environment.py  # Tasks + grader logic
-    └── models.py       # Pydantic action/observation/state
+
+### Local
+
+```bash
+pip install -r requirements.txt
+uvicorn server.app:app --host 0.0.0.0 --port 8000
+```
+
+---
+
+## Running Inference
+
+```bash
+export API_BASE_URL="https://api.openai.com/v1"
+export MODEL_NAME="gpt-4o-mini"
+export HF_TOKEN="your-api-key"
+export ENV_URL="http://localhost:8000"
+
+python inference.py
 ```
