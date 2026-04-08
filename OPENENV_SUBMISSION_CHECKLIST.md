@@ -306,9 +306,9 @@ TASK=hard   python inference.py   # expected: score < 0.8
 
 | Task | Difficulty | Model | Score | Steps | Notes |
 |------|-----------|-------|-------|-------|-------|
-| python-off-by-one | easy | Llama-3.3-70B-Instruct | 0.68 | 1 | |
-| js-auth-privilege | medium | Llama-3.3-70B-Instruct | 0.70 | 1 | |
-| python-sql-injection | hard | Llama-3.3-70B-Instruct | 0.54 | 1 | |
+| python-off-by-one | easy | Llama-3.3-70B-Instruct | 0.883 | 2 | |
+| js-idor-auth | medium | Llama-3.3-70B-Instruct | 0.500 | 2 | |
+| python-pickle-deserialization | hard | Llama-3.3-70B-Instruct | 0.512 | 2 | |
 
 - [x] The table is filled in with real numbers from a completed inference run.
 - [x] The easy task score is ≥ 0.6.
@@ -423,7 +423,7 @@ done
 
 Expected: Three complete runs, each emitting `[START]`, N×`[STEP]`, and `[END]` with no Python exceptions.
 
-- [x] ✓ PASSED — Easy score: 0.68 Medium score: 0.70 Hard score: 0.54
+- [x] ✓ PASSED — Easy score: 0.883 Medium score: 0.500 Hard score: 0.512
 
 ### Step 5 — Verify log format
 
@@ -514,10 +514,10 @@ When all items above are checked, fill in this block and attach it to your submi
 Environment Name:  Code Security Review
 HF Space URL:      https://huggingface.co/spaces/inmodel/code-review-env
 Baseline Scores:
-  - Easy task:     0.68  (task name: python-off-by-one)
-  - Medium task:   0.10  (task name: js-auth-privilege)
-  - Hard task:     0.75  (task name: python-sql-injection)
-Inference runtime: < 1 minute
+  - Easy task:     0.883 (task name: python-off-by-one)
+  - Medium task:   0.500 (task name: js-idor-auth)
+  - Hard task:     0.512 (task name: python-pickle-deserialization)
+Inference runtime: < 20 minutes
 Docker image size: 250 MB
 Submitted by:      NitishKumar
 Date:              2026-04-08
