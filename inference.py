@@ -172,12 +172,28 @@ def run_task(task_id: str, task_num: int, client: OpenAI) -> dict:
 
 def main():
     # Read proxy config directly from environment — NO fallbacks, NO .env loading
-    api_base = os.environ["API_BASE_URL"]
-    api_key  = os.environ["API_KEY"]
+    api_base = os.environ.get("API_BASE_URL", "").strip()
+    api_key  = os.environ.get("API_KEY", "").strip()
+
+    # Validate — crash with a clear message if the grader didn't inject values
+    if not api_base:
+        raise RuntimeError("API_BASE_URL is empty or not set")
+    if not api_key:
+        raise RuntimeError("API_KEY is empty or not set")
+
+    # Ensure base_url ends with / (httpx requires it)
+    if not api_base.endswith("/"):
+        api_base += "/"
 
     print(f"[INFO] API_BASE_URL = {api_base}", flush=True)
     print(f"[INFO] MODEL_NAME   = {MODEL_NAME}", flush=True)
     print(f"[INFO] ENV_URL      = {ENV_URL}", flush=True)
+
+    # Clear any conflicting OPENAI_* env vars so the openai library
+    # doesn't silently override our base_url / api_key
+    os.environ.pop("OPENAI_BASE_URL", None)
+    os.environ.pop("OPENAI_API_KEY", None)
+    os.environ.pop("OPENAI_API_BASE", None)
 
     # Initialize OpenAI client pointing at grader's LiteLLM proxy
     client = OpenAI(base_url=api_base, api_key=api_key)

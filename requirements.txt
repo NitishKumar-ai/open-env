@@ -4,5 +4,5 @@ httptools
 uvloop
 pydantic==2.7.4
 requests==2.32.3
-openai==1.40.0
+openai>=1.40.0
 python-dotenv==1.0.1
