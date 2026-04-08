@@ -40,7 +40,7 @@ def grade_action(action: Dict[str, Any], task: Dict[str, Any]) -> Tuple[float, D
         else:
             breakdown["bug_identified"] = 0.00
             # No bug found → no partial credit for anything else
-            return max(0.0, min(1.0, reward)), breakdown
+            return max(0.01, min(0.99, reward)), breakdown
 
         # ── Component 2: Bug type match (0.20) ──────────────────────────────────
         action_type = action.get("bug_type", "").lower().replace("-", " ").replace("_", " ")
@@ -109,7 +109,7 @@ def grade_action(action: Dict[str, Any], task: Dict[str, Any]) -> Tuple[float, D
                 if k != "stuffing_penalty_multiplier":
                     breakdown[k] = round(breakdown[k] * PENALTY_MULTIPLIER, 4)
 
-        return max(0.0, min(1.0, round(reward, 4))), breakdown
+        return max(0.01, min(0.99, round(reward, 4))), breakdown
 
     except KeyError as exc:
         raise RuntimeError(f"Missing mandatory schema key in task definition: {exc}") from exc

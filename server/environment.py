@@ -65,7 +65,7 @@ class CodeSecurityEnv:
         if self.done:
             return StepResult(
                 observation=self._make_observation(),
-                reward=0.0,
+                reward=0.01,
                 done=True,
                 info={"error": ERROR_EPISODE_COMPLETED},
             )
@@ -89,7 +89,7 @@ class CodeSecurityEnv:
         try:
             reward, breakdown = grade_action(action.model_dump(), self.current_task)
         except Exception as e:
-            reward, breakdown = 0.0, {"error": f"Evaluation error: {e}"}
+            reward, breakdown = 0.01, {"error": f"Evaluation error: {e}"}
 
         self.step_count += 1
         self.total_reward += reward
