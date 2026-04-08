@@ -22,10 +22,10 @@ from openai import OpenAI
 load_dotenv()
 
 # ── Config ────────────────────────────────────────────────────────────────────
-API_BASE_URL = os.getenv("API_BASE_URL") or "https://api.openai.com/v1"
-MODEL_NAME   = os.getenv("MODEL_NAME") or "gpt-4o-mini"
-HF_TOKEN     = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
-ENV_URL      = os.getenv("ENV_URL") or "http://localhost:7860"
+API_BASE_URL = os.environ.get("API_BASE_URL") or "https://api.openai.com/v1"
+MODEL_NAME   = os.environ.get("MODEL_NAME") or "gpt-4o-mini"
+API_KEY      = os.environ.get("API_KEY") or os.environ.get("HF_TOKEN")
+ENV_URL      = os.environ.get("ENV_URL") or "http://localhost:7860"
 BENCHMARK    = "code-security-review"
 
 SYSTEM_PROMPT = """You are a senior security-focused code reviewer.
@@ -264,9 +264,12 @@ def main():
 
     client = None
     try:
-        if not HF_TOKEN:
-            raise ValueError("HF_TOKEN or API_KEY must be set.")
-        client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+        if "API_BASE_URL" in os.environ and "API_KEY" in os.environ:
+            client = OpenAI(base_url=os.environ["API_BASE_URL"], api_key=os.environ["API_KEY"])
+        else:
+            if not API_KEY:
+                raise ValueError("API_KEY or HF_TOKEN must be set.")
+            client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
     except Exception as exc:
         print(f"[WARN] Client init failed: {exc}. Using deterministic fallback.", flush=True)
 
