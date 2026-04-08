@@ -40,39 +40,38 @@ TASKS: Dict[str, Any] = {
         ],
     },
 
-    "js-auth-privilege": {
-        "id": "js-auth-privilege",
-        "name": "JavaScript Auth Logic Flaw",
+    "js-idor-auth": {
+        "id": "js-idor-auth",
+        "name": "JavaScript IDOR Authorization Bypass",
         "language": "JavaScript",
         "difficulty": "medium",
-        "bug_class": "Privilege Escalation / Logic Flaw",
-        "pr_title": "Implement admin middleware for dashboard",
-        "file_path": "middleware/auth.js",
-        "context": "Node.js/Express middleware to restrict access to admin routes",
+        "bug_class": "Insecure Direct Object Reference (IDOR)",
+        "pr_title": "Add user profile endpoint to REST API",
+        "file_path": "routes/users.js",
+        "context": "Node.js/Express REST API — authenticated endpoint returning a user's account profile",
         "code_snippet": (
-            "function checkAdmin(req, res, next) {\n"
-            "    const user = req.user;\n"
-            "    if (user.role !== \"admin\" || user.isActive) {\n"
-            "        return next();\n"
-            "    }\n"
-            "    return res.status(403).json({ error: \"Forbidden\" });\n"
-            "}"
+            "const authenticate = require('./middleware/authenticate');\n\n"
+            "app.get('/users/:userId/profile', authenticate, async (req, res) => {\n"
+            "    const user = await db.findUser(req.params.userId);\n"
+            "    if (!user) return res.status(404).json({ error: 'User not found' });\n"
+            "    return res.json(user);\n"
+            "});"
         ),
         "bug_type": "logic-error",
-        "bug_location": "line 3 — incorrect boolean operator || instead of && allows any active user",
-        "severity": "critical",
+        "bug_location": "line 4 — no check that req.user.id matches req.params.userId",
+        "severity": "high",
         "keywords": [
-            "logic", "operator", "boolean", "disjunction", "escalation", "bypass", "checkAdmin", 
-            "admin", "role", "active", "isActive", "mistake", "security", "authorization",
-            "middleware", "express", "res.status", "next", "auth", "permission", "user", "access"
+            "idor", "insecure direct object reference", "authorization", "horizontal",
+            "privilege", "escalation", "authorization check", "user id",
+            "req.user", "params.userId", "ownership", "access control",
+            "unauthenticated", "other user", "missing check", "object-level"
         ],
         "fix_patterns": [
-            "user.role === \"admin\" && user.isActive",
-            "&& user.isActive",
-            "throw new Error(\"Unauthorized\")",
-            "return next"
+            "req.user.id",
+            "req.params.userId",
+            "403",
+            "Forbidden"
         ],
-        "keyword_target_override": 1.0,
     },
 
     "python-pickle-deserialization": {
@@ -81,28 +80,38 @@ TASKS: Dict[str, Any] = {
         "language": "Python",
         "difficulty": "hard",
         "bug_class": "Insecure Deserialization",
-        "pr_title": "Add state persistence layer for distributed workers",
-        "file_path": "worker/state.py",
-        "context": "Background worker loading serialized state via network payload",
+        "pr_title": "Add distributed task caching layer for worker pool",
+        "file_path": "worker/cache.py",
+        "context": "Redis-backed caching decorator for worker tasks that serializes results to a shared cache",
         "code_snippet": (
-            "import pickle\n\n"
-            "def load_worker_state(payload_bytes):\n"
-            "    state = pickle.loads(payload_bytes)\n"
-            "    return state['config']"
+            "import pickle, redis\n\n"
+            "_cache = redis.Redis(host='localhost')\n\n"
+            "def cached_task(key_prefix):\n"
+            "    def decorator(fn):\n"
+            "        def wrapper(*args, **kwargs):\n"
+            "            cache_key = f'{key_prefix}:{args[0]}'\n"
+            "            cached = _cache.get(cache_key)\n"
+            "            if cached:\n"
+            "                return pickle.loads(cached)\n"
+            "            result = fn(*args, **kwargs)\n"
+            "            _cache.set(cache_key, pickle.dumps(result), ex=3600)\n"
+            "            return result\n"
+            "        return wrapper\n"
+            "    return decorator"
         ),
-        "bug_type": "security-vulnerability",
-        "bug_location": "line 4 — pickle.loads() executes arbitrary code during object recreation",
+        "bug_type": "insecure-deserialization",
+        "bug_location": "line 11 — pickle.loads(cached) deserializes untrusted Redis data without validation",
         "severity": "critical",
         "keywords": [
-            "deserialization", "pickle", "loads", "arbitrary", "code execution", "rce",
-            "injection", "untrusted", "payload", "cve", "insecure", "un-serialize",
-            "malicious", "exploit", "magic methods", "reduce"
+            "cache poisoning", "redis poisoning", "__reduce__",
+            "magic method", "arbitrary bytecode", "hmac", "signing key",
+            "cryptographic integrity", "deserialization gadget", "supply chain"
         ],
         "fix_patterns": [
-            "json.loads",
-            "hmac",
-            "signatures",
-            "safe_load"
+            "hmac.new",
+            "hmac.compare_digest",
+            "signing_key",
         ],
+        "keyword_target_override": 3.0,
     },
 }

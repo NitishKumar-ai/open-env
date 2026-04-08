@@ -20,9 +20,9 @@ tasks:
     max_steps: 2
     reward_range: [0.0, 1.0]
 
-  - id: js-auth-privilege
-    name: "JavaScript Auth Logic Flaw"
-    description: "Identify a privilege escalation vulnerability in Node.js auth middleware"
+  - id: js-idor-auth
+    name: "JavaScript IDOR Authorization Bypass"
+    description: "Identify a horizontal privilege escalation (IDOR) in a Node.js REST profile endpoint"
     difficulty: medium
     max_steps: 2
     reward_range: [0.0, 1.0]
