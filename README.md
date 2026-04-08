@@ -5,13 +5,15 @@ colorFrom: gray
 colorTo: purple
 sdk: docker
 pinned: false
+tags:
+  - openenv
 ---
 
 # Code Security Review — OpenEnv Environment
 
 An RL environment for training AI agents to perform real-world code security review.
-Agents analyze code snippets from production pull requests and identify bugs,
-vulnerabilities, and security issues.
+Agents analyze code from production pull requests across a **two-phase** multi-step
+workflow: first discovering the hidden file, then identifying the vulnerability.
 
 Built by **Inmodel Labs** for the Meta PyTorch OpenEnv Hackathon.
 
@@ -23,9 +25,9 @@ Built by **Inmodel Labs** for the Meta PyTorch OpenEnv Hackathon.
 |---|---|
 | Tasks | 3 (easy → medium → hard) |
 | Languages | Python, JavaScript |
-| Action space | Structured JSON (6 fields) |
-| Reward range | 0.0 – 1.0 |
-| Steps per episode | 1 |
+| Action space | Phase 1: `{"request_file": true}` / Phase 2: Structured JSON (6 fields) |
+| Reward range | 0.0 – 1.0 (clamped) |
+| Steps per episode | 2 (max) |
 
 ---
 
@@ -35,65 +37,109 @@ Built by **Inmodel Labs** for the Meta PyTorch OpenEnv Hackathon.
 |---|---|---|---|
 | `python-off-by-one` | Python | Off-by-one index error | Easy |
 | `js-auth-privilege` | JavaScript | Logic flaw — privilege escalation | Medium |
-| `python-sql-injection` | Python | SQL injection via f-string | Hard |
+| `python-pickle-deserialization` | Python | Insecure deserialization (RCE) | Hard |
 
 ---
 
-## Action Space
+## Two-Phase Episode Walkthrough
 
-The agent submits a JSON action with these fields:
+The agent operates in a **2-step sequential workflow** that mirrors a real AppSec triage process:
 
+**Step 1 — File Discovery** (`+0.20`)
+The agent receives only the PR title and file path. The code is hidden. The agent must request access:
+```json
+{"request_file": true}
+```
+The environment unlocks the code snippet and returns it in the observation.
+
+**Step 2 — Security Review** (up to `+0.80`)
+The agent analyses the code and submits a structured JSON finding:
 ```json
 {
   "bug_identified": true,
   "bug_location": "line 3 — range(len(transactions) + 1)",
-  "bug_type": "logic-error",
+  "bug_type": "off-by-one",
   "bug_description": "Off-by-one error causes IndexError on last iteration...",
   "severity": "medium",
   "suggested_fix": "Change range(len(transactions) + 1) to range(len(transactions))"
 }
 ```
 
+---
+
+## Action Space
+
+### Phase 1 — File Request
+```json
+{"request_file": true}
+```
+
+### Phase 2 — Bug Review
+| Field | Type | Values |
+|---|---|---|
+| `bug_identified` | bool | `true` / `false` |
+| `bug_location` | string | location description |
+| `bug_type` | string | `off-by-one` \| `logic-error` \| `security-vulnerability` \| `none` |
+| `bug_description` | string | detailed vulnerability explanation |
+| `severity` | string | `none` \| `low` \| `medium` \| `high` \| `critical` |
+| `suggested_fix` | string | how to fix the bug |
+
 ## Observation Space
 
 ```json
 {
-  "task_id": "python-sql-injection",
+  "task_id": "python-pickle-deserialization",
   "language": "Python",
   "difficulty": "hard",
-  "code_snippet": "def search_users(db, search_term):\n    ...",
-  "context": "REST API endpoint that searches users by name",
-  "pr_title": "Add user search endpoint to REST API",
-  "file_path": "api/users.py"
+  "code_snippet": "<FILE CONTENTS HIDDEN - Submit {\"request_file\": true} to view>",
+  "context": "Background worker loading serialized state via network payload",
+  "pr_title": "Add state persistence layer for distributed workers",
+  "file_path": "worker/state.py"
 }
 ```
+After `request_file`, `code_snippet` contains the actual source code.
 
 ---
 
 ## Reward Breakdown
 
-| Component | Max Score |
-|---|---|
-| Bug identified | 0.20 |
-| Bug type correct | 0.20 |
-| Bug location correct | 0.10 |
-| Description quality | 0.25 |
-| Fix quality | 0.15 |
-| Severity correct | 0.10 |
-| **Total** | **1.00** |
+| Step | Component | Max Score |
+|---|---|---|
+| 1 | File request granted | 0.20 |
+| 2 | Bug identified | 0.20 |
+| 2 | Bug type correct | 0.20 |
+| 2 | Bug location correct | 0.10 |
+| 2 | Description quality | 0.25 |
+| 2 | Fix quality | 0.15 |
+| 2 | Severity correct | 0.10 |
+| **Total** | | **1.00** |
 
-The grader penalises keyword stuffing — incoherent keyword dumps score ≤ 0.20.
+The grader penalises keyword stuffing — incoherent keyword dumps score ≤ 0.20 on the description component.
+Episode total reward is **clamped to [0.0, 1.0]**.
 
 **Example Calculation:**
-If the agent correctly identifies a bug (+0.20), misidentifies the type (+0.0), finds 50% of the location keywords (+0.05), writes a detailed and coherent description matching most keywords (+0.25), suggests a partially correct fix (+0.08), and gets the severity correct (+0.10), the total reward for that step would be `0.20 + 0.0 + 0.05 + 0.25 + 0.08 + 0.10 = 0.68`.
+Agent requests file (+0.20), correctly identifies bug (+0.20), correct type (+0.20),
+finds 50% location keywords (+0.05), writes good description (+0.20),
+suggests partial fix (+0.08), correct severity (+0.10) = total `0.20+0.20+0.20+0.05+0.20+0.08+0.10 = 1.00` → clamped to `1.00`.
 
 ---
 
 ## Edge Cases
 
-- **At step 0:** `reset()` must be called to initialize the state. If `step()` is called before `reset()`, the environment automatically calls `reset()` internally and evaluates the action on a random task.
-- **Max step limit:** The maximum step limit is 1. Calling `step()` evaluates the action and immediately sets `done=True`.
-- **At done=True:** Calling `step()` returns `reward=0.0`, `done=True`, and a clean error message in the `info` dict `("Episode already completed. Call /reset...")` indicating the episode is complete without auto-resetting.
+- **At step 0:** `reset()` must be called first. Calling `step()` without a reset triggers auto-reset.
+- **Phase 1 skip:** If the agent skips `request_file` and submits a review directly on step 1, it receives no intermediate reward and the code snippet used for grading may be hidden.
+- **Max step limit:** Episode ends at `done=True` when a bug review is submitted or `max_steps=2` is reached.
+- **At done=True:** Calling `step()` returns `reward=0.0`, `done=True`, and `info["error"]` indicating the episode is complete.
+
+---
+
+## Baseline Scores
+
+| Task | Difficulty | Model | Score | Steps | Notes |
+|------|-----------|-------|-------|-------|-------|
+| python-off-by-one | easy | Llama-3.3-70B-Instruct | 0.883 | 2 | File request + review |
+| js-auth-privilege | medium | Llama-3.3-70B-Instruct | 0.900 | 2 | File request + review |
+| python-pickle-deserialization | hard | Llama-3.3-70B-Instruct | TBD | 2 | Requires RCE/deserialization knowledge |
 
 ---
 
@@ -103,7 +149,7 @@ If the agent correctly identifies a bug (+0.20), misidentifies the type (+0.0), 
 |---|---|---|
 | GET | `/` | Health check |
 | POST | `/reset?task_id=<id>` | Reset environment, returns observation |
-| POST | `/step` | Submit action, returns reward |
+| POST | `/step` | Submit action (Phase 1 or Phase 2), returns reward |
 | GET | `/state` | Current episode state |
 | GET | `/tasks` | List all tasks |
 
@@ -130,9 +176,9 @@ uvicorn server.app:app --host 0.0.0.0 --port 8000
 ## Running Inference
 
 ```bash
-export API_BASE_URL="https://api.openai.com/v1"
-export MODEL_NAME="gpt-4o-mini"
-export HF_TOKEN="your-api-key"
+export API_BASE_URL="https://router.huggingface.co/v1"
+export MODEL_NAME="meta-llama/Llama-3.3-70B-Instruct"
+export HF_TOKEN="hf_your_token_here"
 export ENV_URL="http://localhost:8000"
 
 python inference.py

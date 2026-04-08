@@ -17,41 +17,38 @@ tasks:
     name: "Python Off-by-One Error"
     description: "Identify an off-by-one index error in a Python finance batch processor"
     difficulty: easy
-    max_steps: 1
+    max_steps: 2
     reward_range: [0.0, 1.0]
 
   - id: js-auth-privilege
     name: "JavaScript Auth Logic Flaw"
     description: "Identify a privilege escalation vulnerability in Node.js auth middleware"
     difficulty: medium
-    max_steps: 1
+    max_steps: 2
     reward_range: [0.0, 1.0]
 
-  - id: python-sql-injection
-    name: "Python SQL Injection"
-    description: "Identify an SQL injection vulnerability via f-string in a REST API"
+  - id: python-pickle-deserialization
+    name: "Python Pickle Deserialization"
+    description: "Identify an insecure deserialization vulnerability using pickle in a background worker"
     difficulty: hard
-    max_steps: 1
+    max_steps: 2
     reward_range: [0.0, 1.0]
 
 # The Action space defines the format of the agent's response.
 # Each field is scored by the grader to provide partial progress signals.
 action_space:
   type: object
+  description: >
+    Two-phase action space. Phase 1: submit {"request_file": true} to unlock
+    the code snippet (+0.20 reward). Phase 2: submit a full review JSON.
   properties:
+    request_file:     { type: boolean, description: "Phase 1: Request the hidden file contents" }
     bug_identified:   { type: boolean, description: "Boolean: true if a bug exists" }
     bug_location:     { type: string, description: "String: Pinpoint the bug's location in code" }
     bug_type:         { type: string, description: "String: off-by-one | logic-error | security-vulnerability | none" }
     bug_description:  { type: string, description: "String: Detailed analysis of the vulnerability" }
     severity:         { type: string, enum: [none, low, medium, high, critical], description: "String: none | low | medium | high | critical" }
     suggested_fix:    { type: string, description: "String: How to fix the identified bug" }
-  required:
-    - bug_identified
-    - bug_location
-    - bug_type
-    - bug_description
-    - severity
-    - suggested_fix
 
 # The Observation space defines what the agent sees at each step.
 # It uses a structured context to help the agent understand the code's purpose.
@@ -71,10 +68,11 @@ reward:
   min: 0.0
   max: 1.0
   description: >
-    Partial rewards for: bug identification (0.20), correct bug type (0.20),
-    precise location (0.10), description quality (0.25, keyword density),
-    fix quality (0.15, keyword density), correct severity (0.10).
-    Grader penalizes keyword stuffing.
+    Step 1 — File request: +0.20 (flat, always granted).
+    Step 2 — Bug review: partial rewards for bug identification (0.20),
+    correct bug type (0.20), precise location (0.10), description quality (0.25,
+    keyword density), fix quality (0.15), correct severity (0.10).
+    Episode total is clamped to [0.0, 1.0]. Grader penalizes keyword stuffing.
 
 endpoints:
   health: GET /

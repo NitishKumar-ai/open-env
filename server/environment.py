@@ -70,6 +70,22 @@ class CodeSecurityEnv:
                 info={"error": ERROR_EPISODE_COMPLETED},
             )
 
+        # Intermediate Step: Request file
+        if getattr(action, "request_file", False):
+            self.step_count += 1
+            reward = 0.20
+            self.total_reward += reward
+            self.done = False
+            return StepResult(
+                observation=self._make_observation(),
+                reward=reward,
+                done=self.done,
+                info={
+                    "task_name": getattr(self.current_task, "get", dict().get)("name", "Unknown Task") if self.current_task else "Unknown Task",
+                    "step_count": self.step_count
+                },
+            )
+
         try:
             reward, breakdown = grade_action(action.model_dump(), self.current_task)
         except Exception as e:
@@ -77,7 +93,7 @@ class CodeSecurityEnv:
 
         self.step_count += 1
         self.total_reward += reward
-        self.done = True  # single-step environment
+        self.done = True  # single-step environment becomes max 2-step
 
         return StepResult(
             observation=self._make_observation(),
@@ -106,11 +122,14 @@ class CodeSecurityEnv:
         if not t:
             raise KeyError("Attempted observation render without an initialized active task")
         
+        # Hide the snippet before Step 1
+        snippet = t["code_snippet"] if self.step_count > 0 else "<FILE CONTENTS HIDDEN - Submit {\"request_file\": true} to view>"
+        
         return Observation(
             task_id=t["id"],
             language=t["language"],
             difficulty=t["difficulty"],
-            code_snippet=t["code_snippet"],
+            code_snippet=snippet,
             context=t["context"],
             pr_title=t["pr_title"],
             file_path=t["file_path"],

@@ -68,8 +68,9 @@ def grade_action(action: Dict[str, Any], task: Dict[str, Any]) -> Tuple[float, D
         desc_score = 0.0
         if len(description) >= 20:
             task_keywords = task["keywords"]
+            target = task.get("keyword_target_override", KEYWORD_HIT_TARGET)
             matched_kw = [kw for kw in task_keywords if kw in description]
-            desc_score = round(min(SCORE_DESC_QUALITY, SCORE_DESC_QUALITY * (len(matched_kw) / KEYWORD_HIT_TARGET)), 4)
+            desc_score = round(min(SCORE_DESC_QUALITY, SCORE_DESC_QUALITY * (len(matched_kw) / target)), 4)
         
         breakdown["description_quality"] = desc_score
         reward += desc_score

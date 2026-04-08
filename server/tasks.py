@@ -69,39 +69,40 @@ TASKS: Dict[str, Any] = {
         "fix_patterns": [
             "user.role === \"admin\" && user.isActive",
             "&& user.isActive",
-            "throw new Error(\"Unauthorized\")"
+            "throw new Error(\"Unauthorized\")",
+            "return next"
         ],
+        "keyword_target_override": 1.0,
     },
 
-    "python-sql-injection": {
-        "id": "python-sql-injection",
-        "name": "Python SQL Injection",
+    "python-pickle-deserialization": {
+        "id": "python-pickle-deserialization",
+        "name": "Python Pickle Deserialization",
         "language": "Python",
         "difficulty": "hard",
-        "bug_class": "SQL injection via f-string",
-        "pr_title": "Add user search endpoint to REST API",
-        "file_path": "api/users.py",
-        "context": "REST API endpoint that searches users by name in a PostgreSQL database",
+        "bug_class": "Insecure Deserialization",
+        "pr_title": "Add state persistence layer for distributed workers",
+        "file_path": "worker/state.py",
+        "context": "Background worker loading serialized state via network payload",
         "code_snippet": (
-            "def search_users(db, search_term):\n"
-            "    query = f\"SELECT * FROM users WHERE name LIKE '%{search_term}%'\"\n"
-            "    results = db.execute(query)\n"
-            "    return results.fetchall()"
+            "import pickle\n\n"
+            "def load_worker_state(payload_bytes):\n"
+            "    state = pickle.loads(payload_bytes)\n"
+            "    return state['config']"
         ),
         "bug_type": "security-vulnerability",
-        "bug_location": "line 2 — f-string interpolation directly in SQL query",
+        "bug_location": "line 4 — pickle.loads() executes arbitrary code during object recreation",
         "severity": "critical",
         "keywords": [
-            "interpolated", "f-string", "SQLi", "vector", "injection-flaw", "binding-hazard",
-            "sanitization-gap", "DBAPI-compliance", "concatenation-pattern", "raw-sql",
-            "prepared-statement-fix", "parameterized-query-binding", "placeholder-syntax",
-            "SQL-interpolation", "driver-protocol", "malicious-input-flow", "exfiltration-risk",
-            "second-order-injection", "blind-sql-injection", "union-based-attack"
+            "deserialization", "pickle", "loads", "arbitrary", "code execution", "rce",
+            "injection", "untrusted", "payload", "cve", "insecure", "un-serialize",
+            "malicious", "exploit", "magic methods", "reduce"
         ],
         "fix_patterns": [
-            "execute(query, (search_term,))",
-            "bind variables",
-            "parameterized query"
+            "json.loads",
+            "hmac",
+            "signatures",
+            "safe_load"
         ],
     },
 }

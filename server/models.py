@@ -6,14 +6,15 @@ from pydantic import BaseModel, Field
 # ── Agent Action ──────────────────────────────────────────────────────────────
 
 class CodeReviewAction(BaseModel):
-    """Action taken by the agent: a structured code review."""
+    """Action taken by the agent: a structured code review or a file request."""
     
-    bug_identified: bool = Field(..., description="Whether a bug was found")
-    bug_location: str = Field(..., description="Location of the bug (function, line, variable)")
-    bug_type: str = Field(..., description="Type: off-by-one | logic-error | security-vulnerability | none")
-    bug_description: str = Field(..., description="Detailed explanation of why this is a bug")
-    severity: str = Field(..., description="Severity: none | low | medium | high | critical")
-    suggested_fix: str = Field(..., description="The corrected code or a description of how to fix it")
+    request_file: Optional[bool] = Field(None, description="Request the file contents")
+    bug_identified: Optional[bool] = Field(None, description="Whether a bug was found")
+    bug_location: Optional[str] = Field(None, description="Location of the bug (function, line, variable)")
+    bug_type: Optional[str] = Field(None, description="Type: off-by-one | logic-error | security-vulnerability | none")
+    bug_description: Optional[str] = Field(None, description="Detailed explanation of why this is a bug")
+    severity: Optional[str] = Field(None, description="Severity: none | low | medium | high | critical")
+    suggested_fix: Optional[str] = Field(None, description="The corrected code or a description of how to fix it")
 
 # ── Observation ───────────────────────────────────────────────────────────────
 
