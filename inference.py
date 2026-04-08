@@ -167,7 +167,7 @@ def run_task(task_id: str, task_num: int, client=None) -> dict:
             except Exception as exc:
                 error = str(exc).replace("\n", " ")
                 print(f"\n[CRITICAL ERROR] LLM CALL FAILED: {error}\n", flush=True)
-                raise exc  # Fail fast to see the real error instead of silently falling back
+                import sys; sys.exit(1)
 
             # ── Step env ──────────────────────────────────────────────────────────
             step_resp = env_post("/step", data=action_dict)
@@ -204,7 +204,8 @@ def main():
     try:
         client = OpenAI(base_url=os.environ["API_BASE_URL"], api_key=os.environ["API_KEY"])
     except Exception as exc:
-        print(f"[WARN] Client init failed: {exc}", flush=True)
+        print(f"[CRITICAL ERROR] Client init failed: {exc}", flush=True)
+        import sys; sys.exit(1)
 
     TASK_FILTER = os.environ.get("TASK")
 
