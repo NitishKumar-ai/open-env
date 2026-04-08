@@ -11,4 +11,4 @@ dist/
 *.whl
 *.tar.gz
 .pytest_cache/
-.coverage
+.coveragevenv/
