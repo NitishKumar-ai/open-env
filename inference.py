@@ -2,31 +2,24 @@
 Baseline inference script for Code Security Review OpenEnv.
 Compliant with mandatory STDOUT format: [START], [STEP], [END].
 
-Required environment variables:
-    API_BASE_URL   — LLM API endpoint
-    MODEL_NAME     — Model identifier
-    HF_TOKEN       — Hugging Face / API key
+Required environment variables (injected by grader):
+    API_BASE_URL   — LiteLLM proxy endpoint
+    API_KEY        — LiteLLM proxy key
     ENV_URL        — Running environment URL (default: http://localhost:7860)
+    MODEL_NAME     — Model identifier (default: gpt-4o-mini)
 """
 
 import os
 import json
-import time
 import re
 import requests
 from typing import List, Optional
-from dotenv import load_dotenv
 from openai import OpenAI
 
-# Load .env variables
-load_dotenv()
-
-# ── Config ────────────────────────────────────────────────────────────────────
-API_BASE_URL = os.environ.get("API_BASE_URL") or "https://api.openai.com/v1"
-MODEL_NAME   = os.environ.get("MODEL_NAME") or "gpt-4o-mini"
-API_KEY      = os.environ.get("API_KEY") or os.environ.get("HF_TOKEN")
-ENV_URL      = os.environ.get("ENV_URL") or "http://localhost:7860"
-BENCHMARK    = "code-security-review"
+# ── Config (NO load_dotenv – grader injects env vars directly) ────────────────
+ENV_URL   = os.environ.get("ENV_URL", "http://localhost:7860")
+MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o-mini")
+BENCHMARK = "code-security-review"
 
 SYSTEM_PROMPT = """You are a senior security-focused code reviewer.
 
@@ -76,18 +69,11 @@ def env_post(path: str, data: Optional[dict] = None, params: Optional[dict] = No
 
 
 def parse_json_from_llm(text: str) -> dict:
-    """Robustly extract JSON from LLM output.
-    
-    Strategy: strip markdown fences, then try to find the LAST top-level
-    JSON object in the text (after the LLM has potentially emitted code examples).
-    """
+    """Robustly extract JSON from LLM output."""
     text = text.strip()
-    # Strip ```json ... ``` and ``` ... ``` fences
     text = re.sub(r"```(?:json)?\s*", "", text)
     text = re.sub(r"```", "", text)
-    # Find all top-level {...} objects in the text
     candidates = re.findall(r"(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})", text, re.DOTALL)
-    # Prefer the LAST candidate that is valid JSON (the review JSON, not a code example)
     for candidate in reversed(candidates):
         try:
             parsed = json.loads(candidate)
@@ -95,7 +81,6 @@ def parse_json_from_llm(text: str) -> dict:
                 return parsed
         except Exception:
             continue
-    # Final fallback: try the whole stripped text
     try:
         return json.loads(text)
     except Exception:
@@ -118,7 +103,7 @@ def build_prompt(obs: dict) -> str:
 
 # ── Task runner ───────────────────────────────────────────────────────────────
 
-def run_task(task_id: str, task_num: int, client=None) -> dict:
+def run_task(task_id: str, task_num: int, client: OpenAI) -> dict:
     cumulative_reward = 0.0
     step_num = 0
     done = False
@@ -132,48 +117,32 @@ def run_task(task_id: str, task_num: int, client=None) -> dict:
 
         max_steps = 2
         error = None
-        file_requested = False
-        messages = []  # conversation history for LLM
+        messages = []
 
         while not done and step_num < max_steps:
             step_num += 1
             prompt = build_prompt(obs)
             action_dict = {}
 
-            # ── LLM call ──────────────────────────────────────────────────────────
-            try:
-                if client is None:
-                    raise ValueError("OpenAI client was not initialized. Proxy evaluation cannot proceed.")
-                else:
-                    # Multi-turn: build conversation history
-                    if not messages:
-                        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-                    messages.append({"role": "user", "content": prompt})
+            # ── LLM call (must go through grader proxy) ──────────────────────
+            if not messages:
+                messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+            messages.append({"role": "user", "content": prompt})
 
-                    response = client.chat.completions.create(
-                        model=MODEL_NAME,
-                        messages=messages,
-                        temperature=0.1,
-                        max_tokens=600,
-                        stream=False,
-                    )
-                    raw = response.choices[0].message.content
-                    # Add assistant reply to history for next turn
-                    messages.append({"role": "assistant", "content": raw})
+            response = client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=messages,
+                temperature=0.1,
+                max_tokens=600,
+                stream=False,
+            )
+            raw = response.choices[0].message.content
+            messages.append({"role": "assistant", "content": raw})
 
-                    action_dict = parse_json_from_llm(raw)
-                    action_str = json.dumps(action_dict)
-                    error = None
-            except Exception as exc:
-                error = str(exc).replace("\n", " ")
-                import urllib.parse
-                safe_err = urllib.parse.quote(error[:200])
-                try: requests.get(f"{ENV_URL}/DEBUG_EXC/{safe_err}", timeout=5)
-                except: pass
-                print(f"\n[CRITICAL ERROR] LLM CALL FAILED: {error}\n", flush=True)
-                import sys; sys.exit(1)
+            action_dict = parse_json_from_llm(raw)
+            action_str = json.dumps(action_dict)
 
-            # ── Step env ──────────────────────────────────────────────────────────
+            # ── Step env ─────────────────────────────────────────────────────
             step_resp = env_post("/step", data=action_dict)
             reward = step_resp["reward"]
             done   = step_resp["done"]
@@ -182,11 +151,11 @@ def run_task(task_id: str, task_num: int, client=None) -> dict:
             all_rewards.append(reward)
             cumulative_reward += reward
 
-            log_step(step=step_num, action=action_str, reward=reward, done=done, error=error)
+            log_step(step=step_num, action=action_str, reward=reward, done=done, error=None)
 
         success = cumulative_reward >= 0.8
     except Exception as exc:
-        print(f"[ERROR] Exception during run_task: {exc}", flush=True)
+        print(f"[ERROR] task={task_id} exception: {exc}", flush=True)
     finally:
         clamped_score = round(min(1.0, max(0.0, cumulative_reward)), 3)
         log_end(success=success, steps=step_num, score=clamped_score, rewards=all_rewards)
@@ -202,20 +171,17 @@ def run_task(task_id: str, task_num: int, client=None) -> dict:
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    print(f"[INFO] Initializing inference on {BENCHMARK} using {MODEL_NAME}", flush=True)
+    # Read proxy config directly from environment — NO fallbacks, NO .env loading
+    api_base = os.environ["API_BASE_URL"]
+    api_key  = os.environ["API_KEY"]
 
-    client = None
-    try:
-        client = OpenAI(base_url=os.environ["API_BASE_URL"], api_key=os.environ["API_KEY"])
-    except Exception as exc:
-        import urllib.parse
-        safe_err = urllib.parse.quote(str(exc)[:200])
-        try:
-            import requests
-            requests.get(f"{os.environ.get('ENV_URL', 'http://localhost:7860')}/DEBUG_INIT/{safe_err}", timeout=5)
-        except: pass
-        print(f"[CRITICAL ERROR] Client init failed: {exc}", flush=True)
-        import sys; sys.exit(1)
+    print(f"[INFO] API_BASE_URL = {api_base}", flush=True)
+    print(f"[INFO] MODEL_NAME   = {MODEL_NAME}", flush=True)
+    print(f"[INFO] ENV_URL      = {ENV_URL}", flush=True)
+
+    # Initialize OpenAI client pointing at grader's LiteLLM proxy
+    client = OpenAI(base_url=api_base, api_key=api_key)
+    print(f"[INFO] OpenAI client initialized successfully", flush=True)
 
     TASK_FILTER = os.environ.get("TASK")
 
@@ -233,11 +199,7 @@ def main():
     results = []
 
     for task_id, task_num, _ in tasks:
-        try:
-            r = run_task(task_id, task_num, client=client)
-        except Exception as exc:
-            print(f"[ERROR] task_id={task_id} error={exc}", flush=True)
-            r = {"task_num": task_num, "task_id": task_id, "score": 0.0, "success": False}
+        r = run_task(task_id, task_num, client=client)
         results.append(r)
 
     if results:
