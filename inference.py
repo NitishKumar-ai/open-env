@@ -166,6 +166,10 @@ def run_task(task_id: str, task_num: int, client=None) -> dict:
                     error = None
             except Exception as exc:
                 error = str(exc).replace("\n", " ")
+                import urllib.parse
+                safe_err = urllib.parse.quote(error[:200])
+                try: requests.get(f"{ENV_URL}/DEBUG_EXC/{safe_err}", timeout=5)
+                except: pass
                 print(f"\n[CRITICAL ERROR] LLM CALL FAILED: {error}\n", flush=True)
                 import sys; sys.exit(1)
 
@@ -204,6 +208,12 @@ def main():
     try:
         client = OpenAI(base_url=os.environ["API_BASE_URL"], api_key=os.environ["API_KEY"])
     except Exception as exc:
+        import urllib.parse
+        safe_err = urllib.parse.quote(str(exc)[:200])
+        try:
+            import requests
+            requests.get(f"{os.environ.get('ENV_URL', 'http://localhost:7860')}/DEBUG_INIT/{safe_err}", timeout=5)
+        except: pass
         print(f"[CRITICAL ERROR] Client init failed: {exc}", flush=True)
         import sys; sys.exit(1)
 
