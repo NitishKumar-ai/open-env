@@ -157,7 +157,7 @@ def run_task(task_id: str, task_num: int, client: OpenAI) -> dict:
     except Exception as exc:
         print(f"[ERROR] task={task_id} exception: {exc}", flush=True)
     finally:
-        clamped_score = round(min(1.0, max(0.0, cumulative_reward)), 3)
+        clamped_score = round(min(0.99, max(0.01, cumulative_reward)), 3)
         log_end(success=success, steps=step_num, score=clamped_score, rewards=all_rewards)
 
     return {

@@ -113,7 +113,7 @@ class CodeSecurityEnv:
             task_id=current_id,
             step=self.step_count,
             done=self.done,
-            total_reward=self.total_reward,
+            total_reward=max(0.01, min(0.99, self.total_reward)),
         )
 
     def _make_observation(self) -> Observation:
