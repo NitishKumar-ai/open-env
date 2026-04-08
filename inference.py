@@ -143,39 +143,7 @@ def run_task(task_id: str, task_num: int, client=None) -> dict:
             # ── LLM call ──────────────────────────────────────────────────────────
             try:
                 if client is None:
-                    # Deterministic fallback: first request the file, then review
-                    if not file_requested:
-                        action_dict = {"request_file": True}
-                        file_requested = True
-                    elif task_id == "python-off-by-one":
-                        action_dict = {
-                            "bug_identified": True,
-                            "bug_location": "line 3",
-                            "bug_type": "off-by-one",
-                            "bug_description": "loop range(len(transactions) + 1) index error off-by-one out of bounds error",
-                            "severity": "medium",
-                            "suggested_fix": "range(len(transactions))",
-                        }
-                    elif task_id == "js-idor-auth":
-                        action_dict = {
-                            "bug_identified": True,
-                            "bug_location": "line 4 — no check that req.user.id matches req.params.userId",
-                            "bug_type": "logic-error",
-                            "bug_description": "idor insecure direct object reference authorization horizontal privilege escalation missing check req.user params.userId ownership access control",
-                            "severity": "high",
-                            "suggested_fix": "Add check req.user.id === req.params.userId else return 403 Forbidden",
-                        }
-                    else:
-                        action_dict = {
-                            "bug_identified": True,
-                            "bug_location": "line 4",
-                            "bug_type": "security-vulnerability",
-                            "bug_description": "deserialization pickle rce arbitrary code execution loads magic exploit un-serialize cve untrusted payload",
-                            "severity": "critical",
-                            "suggested_fix": "json.loads or safe_load",
-                        }
-                    action_str = json.dumps(action_dict)
-                    error = None
+                    raise ValueError("OpenAI client was not initialized. Proxy evaluation cannot proceed.")
                 else:
                     # Multi-turn: build conversation history
                     if not messages:
@@ -198,38 +166,8 @@ def run_task(task_id: str, task_num: int, client=None) -> dict:
                     error = None
             except Exception as exc:
                 error = str(exc).replace("\n", " ")
-                # API unavailable — fall back to deterministic actions so env still scores
-                if not file_requested:
-                    action_dict = {"request_file": True}
-                    file_requested = True
-                elif task_id == "python-off-by-one":
-                    action_dict = {
-                        "bug_identified": True,
-                        "bug_location": "line 3 - range(len(transactions) + 1)",
-                        "bug_type": "off-by-one",
-                        "bug_description": "loop range(len(transactions) + 1) index error off-by-one out of bounds error",
-                        "severity": "medium",
-                        "suggested_fix": "Change range(len(transactions) + 1) to range(len(transactions))",
-                    }
-                elif task_id == "js-idor-auth":
-                    action_dict = {
-                        "bug_identified": True,
-                        "bug_location": "line 4 - no check that req.user.id matches req.params.userId",
-                        "bug_type": "logic-error",
-                        "bug_description": "idor insecure direct object reference authorization horizontal privilege escalation missing check req.user params.userId ownership access control",
-                        "severity": "high",
-                        "suggested_fix": "Add check req.user.id === req.params.userId else return 403 Forbidden",
-                    }
-                else:
-                    action_dict = {
-                        "bug_identified": True,
-                        "bug_location": "line 11 - pickle.loads(cached) deserializes untrusted Redis data",
-                        "bug_type": "security-vulnerability",
-                        "bug_description": "pickle deserializ untrusted redis cache arbitrary code execution rce cache poisoning validate hmac signature injection",
-                        "severity": "critical",
-                        "suggested_fix": "Replace pickle with json serialization and validate cache with hmac signature",
-                    }
-                action_str = json.dumps(action_dict)
+                print(f"\n[CRITICAL ERROR] LLM CALL FAILED: {error}\n", flush=True)
+                raise exc  # Fail fast to see the real error instead of silently falling back
 
             # ── Step env ──────────────────────────────────────────────────────────
             step_resp = env_post("/step", data=action_dict)
@@ -264,14 +202,9 @@ def main():
 
     client = None
     try:
-        if "API_BASE_URL" in os.environ and "API_KEY" in os.environ:
-            client = OpenAI(base_url=os.environ["API_BASE_URL"], api_key=os.environ["API_KEY"])
-        else:
-            if not API_KEY:
-                raise ValueError("API_KEY or HF_TOKEN must be set.")
-            client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+        client = OpenAI(base_url=os.environ["API_BASE_URL"], api_key=os.environ["API_KEY"])
     except Exception as exc:
-        print(f"[WARN] Client init failed: {exc}. Using deterministic fallback.", flush=True)
+        print(f"[WARN] Client init failed: {exc}", flush=True)
 
     TASK_FILTER = os.environ.get("TASK")
 
