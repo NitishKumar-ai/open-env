@@ -45,7 +45,7 @@ action_space:
     request_file:     { type: boolean, description: "Phase 1: Request the hidden file contents" }
     bug_identified:   { type: boolean, description: "Boolean: true if a bug exists" }
     bug_location:     { type: string, description: "String: Pinpoint the bug's location in code" }
-    bug_type:         { type: string, description: "String: off-by-one | logic-error | security-vulnerability | none" }
+    bug_type:         { type: string, description: "String: off-by-one | logic-error | insecure-deserialization | none" }
     bug_description:  { type: string, description: "String: Detailed analysis of the vulnerability" }
     severity:         { type: string, enum: [none, low, medium, high, critical], description: "String: none | low | medium | high | critical" }
     suggested_fix:    { type: string, description: "String: How to fix the identified bug" }

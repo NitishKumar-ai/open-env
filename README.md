@@ -36,8 +36,8 @@ Built by **Inmodel Labs** for the Meta PyTorch OpenEnv Hackathon.
 | ID | Language | Bug Class | Difficulty |
 |---|---|---|---|
 | `python-off-by-one` | Python | Off-by-one index error | Easy |
-| `js-auth-privilege` | JavaScript | Logic flaw — privilege escalation | Medium |
-| `python-pickle-deserialization` | Python | Insecure deserialization (RCE) | Hard |
+| `js-idor-auth` | JavaScript | Insecure Direct Object Reference (IDOR) | Medium |
+| `python-pickle-deserialization` | Python | Insecure Deserialization (RCE) | Hard |
 
 ---
 
@@ -79,7 +79,7 @@ The agent analyses the code and submits a structured JSON finding:
 |---|---|---|
 | `bug_identified` | bool | `true` / `false` |
 | `bug_location` | string | location description |
-| `bug_type` | string | `off-by-one` \| `logic-error` \| `security-vulnerability` \| `none` |
+| `bug_type` | string | `off-by-one` \| `logic-error` \| `insecure-deserialization` \| `none` |
 | `bug_description` | string | detailed vulnerability explanation |
 | `severity` | string | `none` \| `low` \| `medium` \| `high` \| `critical` |
 | `suggested_fix` | string | how to fix the bug |
@@ -92,9 +92,9 @@ The agent analyses the code and submits a structured JSON finding:
   "language": "Python",
   "difficulty": "hard",
   "code_snippet": "<FILE CONTENTS HIDDEN - Submit {\"request_file\": true} to view>",
-  "context": "Background worker loading serialized state via network payload",
-  "pr_title": "Add state persistence layer for distributed workers",
-  "file_path": "worker/state.py"
+  "context": "Redis-backed caching decorator for worker tasks that serializes results...",
+  "pr_title": "Add distributed task caching layer for worker pool",
+  "file_path": "worker/cache.py"
 }
 ```
 After `request_file`, `code_snippet` contains the actual source code.
@@ -138,8 +138,8 @@ suggests partial fix (+0.08), correct severity (+0.10) = total `0.20+0.20+0.20+0
 | Task | Difficulty | Model | Score | Steps | Notes |
 |------|-----------|-------|-------|-------|-------|
 | python-off-by-one | easy | Llama-3.3-70B-Instruct | 0.883 | 2 | File request + review |
-| js-auth-privilege | medium | Llama-3.3-70B-Instruct | 0.900 | 2 | File request + review |
-| python-pickle-deserialization | hard | Llama-3.3-70B-Instruct | TBD | 2 | Requires RCE/deserialization knowledge |
+| js-idor-auth | medium | Llama-3.3-70B-Instruct | 0.500 | 2 | File request + review |
+| python-pickle-deserialization | hard | Llama-3.3-70B-Instruct | 0.512 | 2 | File request + review |
 
 ---
 
