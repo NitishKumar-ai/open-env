@@ -171,15 +171,15 @@ def run_task(task_id: str, task_num: int, client: OpenAI) -> dict:
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    # Read proxy config directly from environment — NO fallbacks, NO .env loading
-    api_base = os.environ.get("API_BASE_URL", "").strip()
-    api_key  = os.environ.get("API_KEY", "").strip()
+    # Read proxy config exactly as the sample inference.py specifies
+    api_base = os.getenv("API_BASE_URL", "https://api.openai.com/v1").strip()
+    api_key  = os.getenv("HF_TOKEN", "").strip() or os.getenv("API_KEY", "").strip()
 
-    # Validate — crash with a clear message if the grader didn't inject values
+    # Validate — crash with a clear message if the grader didn't inject a key
     if not api_base:
         raise RuntimeError("API_BASE_URL is empty or not set")
     if not api_key:
-        raise RuntimeError("API_KEY is empty or not set")
+        raise RuntimeError("Neither HF_TOKEN nor API_KEY is set")
 
     # Ensure base_url ends with / (httpx requires it)
     if not api_base.endswith("/"):
